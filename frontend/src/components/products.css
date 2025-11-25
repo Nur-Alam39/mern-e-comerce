@@ -1,0 +1,316 @@
+/* Product Card Styles (scoped to .card.product-card) */
+.card.product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  position: relative;
+}
+
+
+.card.product-card .card-img-wrapper {
+  position: relative;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  background-color: #f8f8f8;
+}
+
+.card.product-card .card-img-link {
+  display: block;
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.card.product-card .card-img-top {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  display: block;
+  background-color: #f8f8f8;
+  transition: transform 0.3s ease;
+  border-radius: 0 !important;
+}
+
+.card.product-card .card-img-link:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+.card.product-card .card-wishlist-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+  color: #999;
+}
+
+.card.product-card .card-wishlist-btn:hover {
+  color: #e31b23;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card.product-card .card-wishlist-btn.active {
+  color: #e31b23;
+}
+
+.card.product-card .card-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0 !important;
+}
+
+.card.product-card .card-title-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  cursor: pointer;
+}
+
+
+.card.product-card .card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s;
+  color: #333;
+}
+
+.card.product-card .card-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgb(98, 97, 97);
+  margin-bottom: 0;
+}
+
+.card.product-card .btn-outline-primary {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.product-slider-wrapper {
+  overflow: hidden;
+  width: 100%;
+}
+.product-slider-track {
+  display: flex;
+  gap: 12px;
+  padding: 8px 4px;
+  transition: transform 350ms cubic-bezier(.2,.8,.2,1);
+}
+.product-slide {
+  flex: 0 0 180px;
+  max-width: 180px;
+}
+.product-slide .card.product-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.product-slide .card.product-card .card-img-wrapper {
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  position: relative;
+}
+.product-slide .card.product-card .card-img-link {
+  height: 140px;
+}
+.product-slide .card.product-card .card-img-top {
+  height: 140px;
+}
+
+/* Force left alignment when few items */
+.few-items .slick-list {
+  margin-left: 0 !important;
+}
+
+.few-items .slick-track {
+  transform: translate3d(0px, 0px, 0px) !important;
+  margin-left: 0 !important;
+  text-align: left !important;
+}
+
+.few-items .slick-slide {
+  float: left !important;
+}
+
+/* Slider control buttons */
+.slider-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.slider-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.15);
+}
+
+/* Arrow button base styling */
+.slick-prev-btn,
+.slick-next-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;      /* light ash */
+  color: #000;              /* black text/icon */
+  border-radius: 50%;
+  position: absolute;
+  top: 40%;
+  z-index: 5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+  transition: 0.2s;
+}
+
+.slick-prev-btn:hover,
+.slick-next-btn:hover {
+  background: rgba(98, 97, 97, 0.09);      /* darker ash on hover */
+  color: #000;
+  opacity: 1;
+}
+
+.slick-prev-btn {
+  left: -25px;
+}
+
+.slick-next-btn {
+  right: -25px;
+}
+
+/* Custom dots */
+.custom-slick-dots {
+  margin-top: 15px !important;
+  text-align: center;
+}
+
+.custom-slick-dots li {
+  display: inline-block;
+  margin: 0 4px;
+}
+
+.custom-slick-dots li button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ccc;
+  text-indent: -9999px;
+  overflow: hidden;
+  border: none;
+}
+
+.custom-slick-dots li.slick-active button {
+  background: #000;
+}
+
+
+/* Breadcrumb styles */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+.breadcrumb-item + .breadcrumb-item::before {
+  content: '>';
+  padding: 0;
+  color: #888;
+}
+.breadcrumb a {
+  color: #6c757d;
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* Custom Pagination Styles */
+.custom-pagination {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-pagination .page-item .page-link {
+  color: #333;
+  background-color: #fff;
+  /* border: 2px solid #333; */
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 4px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.custom-pagination .page-item .page-link:hover {
+  background-color: #333;
+  color: #fff;
+  border-color: #333;
+  /* transform: scale(1.1); */
+}
+
+.custom-pagination .page-item.active .page-link {
+  background-color: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+.custom-pagination .page-item.disabled .page-link {
+  color: #ccc;
+  background-color: #f8f8f8;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.custom-pagination .page-item.disabled .page-link:hover {
+  background-color: #f8f8f8;
+  color: #ccc;
+  transform: none;
+}
+
+/* Previous/Next buttons styling */
+.custom-pagination .page-item:first-child .page-link,
+.custom-pagination .page-item:last-child .page-link {
+  width: auto;
+  min-width: 80px;
+  border-radius: 20px;
+  padding: 0 16px;
+}

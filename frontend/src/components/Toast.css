@@ -1,0 +1,56 @@
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    /* animation: slideIn 0.3s ease-out; */
+}
+
+.toast-message {
+    background-color: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-weight: 500;
+    font-size: 0.95rem;
+    max-width: 400px;
+    word-wrap: break-word;
+}
+
+@keyframes slideIn {
+    from {
+        right: -400px;
+        opacity: 0;
+    }
+
+    to {
+        right: 20px;
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        right: 20px;
+        opacity: 1;
+    }
+
+    to {
+        right: -400px;
+        opacity: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .toast-container {
+        bottom: 10px;
+        right: 10px;
+    }
+
+    .toast-message {
+        max-width: calc(100vw - 40px);
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+}
