@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AdminSidebar from './AdminSidebar';
 
 export default function AdminSliders() {
   const [sliders, setSliders] = useState([]);
@@ -32,27 +33,34 @@ export default function AdminSliders() {
   };
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3>Sliders</h3>
-        <button className="btn btn-success" onClick={handleCreate}>Add Slider</button>
+      <div>
+          <div className="row">
+              <div className="col-md-3 mb-3">
+                  <AdminSidebar active="sliders" onChange={(s) => navigate(`/admin?section=${s}`)} />
+              </div>
+              <div className="col-md-9">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h3>Sliders</h3>
+                      <button className="btn btn-success" onClick={handleCreate}>Add Slider</button>
+                  </div>
+                  {loading ? <p>Loading...</p> : (
+                      <ul className="list-group">
+                          {sliders.map(s => (
+                              <li key={s._id} className="list-group-item d-flex justify-content-between align-items-center">
+                                  <div>
+                                      <strong>{s.title || '(no title)'}</strong>
+                                      {s.subtitle ? <div className="small text-muted">{s.subtitle}</div> : null}
+                                  </div>
+                                  <div>
+                                      <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(s)}>Edit</button>
+                                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s)}>Delete</button>
+                                  </div>
+                              </li>
+                          ))}
+                      </ul>
+                  )}
+              </div>
+          </div>
       </div>
-      {loading ? <p>Loading...</p> : (
-        <ul className="list-group">
-          {sliders.map(s => (
-            <li key={s._id} className="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong>{s.title || '(no title)'}</strong>
-                {s.subtitle ? <div className="small text-muted">{s.subtitle}</div> : null}
-              </div>
-              <div>
-                <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(s)}>Edit</button>
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s)}>Delete</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
