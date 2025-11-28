@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './AdminNavbar.css';
 
-const AdminNavbar = () => {
+const AdminNavbar = ({ sidebarOpen, setSidebarOpen }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -34,8 +34,17 @@ const AdminNavbar = () => {
 
   return (
     <nav className="admin-navbar">
-      <div className="admin-navbar__right">
+      <div className="admin-navbar__left">
+        <button
+          className="admin-navbar__hamburger d-lg-none"
+          onClick={(e) => { e.stopPropagation(); setSidebarOpen(!sidebarOpen); }}
+          aria-label="Toggle sidebar"
+        >
+          <i className={`fa ${sidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
+        </button>
         <span className="admin-navbar__name">{user?.name || 'Admin'}</span>
+      </div>
+      <div className="admin-navbar__right">
         <div className="admin-navbar__dropdown-wrapper" ref={dropdownRef}>
           <button
             className="admin-navbar__icon-btn"
@@ -51,6 +60,9 @@ const AdminNavbar = () => {
                   Admin Dashboard
                 </a>
               )}
+              <a href="#" className="admin-navbar__dropdown-item" onClick={(e) => { e.preventDefault(); handleNavigation('/'); }}>
+                Shop
+              </a>
               <a href="#" className="admin-navbar__dropdown-item" onClick={(e) => { e.preventDefault(); handleNavigation('/profile'); }}>
                 Profile
               </a>

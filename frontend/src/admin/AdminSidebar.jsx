@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
+import './AdminSidebar.css';
 
-export default function AdminSidebar({ active, onChange }) {
+const AdminSidebar = forwardRef(function AdminSidebar({ active, onChange, isOpen }, ref) {
   const [expandedSections, setExpandedSections] = useState({ settings: false });
 
   const mainItems = [
-    { key: 'products', label: 'Products' },
-    { key: 'categories', label: 'Categories' },
-    { key: 'orders', label: 'Orders' },
-    { key: 'customers', label: 'Customers' },
-    { key: 'pages', label: 'Pages' },
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
+    { key: 'products', label: 'Products', icon: 'fa-box' },
+    { key: 'categories', label: 'Categories', icon: 'fa-tags' },
+    { key: 'orders', label: 'Orders', icon: 'fa-shopping-cart' },
+    { key: 'customers', label: 'Customers', icon: 'fa-users' },
+    { key: 'pages', label: 'Pages', icon: 'fa-file-alt' },
+    { key: 'sliders', label: 'Sliders', icon: 'fa-images' },
+    { key: 'settings', label: 'General Settings', icon: 'fa-cog' },
+    { key: 'payments', label: 'Payment Methods', icon: 'fa-credit-card' },
+    { key: 'couriers', label: 'Courier Providers', icon: 'fa-truck' },
   ];
 
   const settingsItems = [
@@ -26,48 +32,23 @@ export default function AdminSidebar({ active, onChange }) {
   };
 
   return (
-    <div className="card">
-      <div className="card-body p-2">
-        <h5 className="card-title">Admin</h5>
-        <div className="list-group list-group-flush">
-          {mainItems.map(it => (
+    <div ref={ref} className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
+      <ul className="admin-sidebar__nav">
+        {mainItems.map(it => (
+          <li key={it.key}>
             <button
-              key={it.key}
               type="button"
-              className={`list-group-item list-group-item-action text-start ${active === it.key ? 'active' : ''}`}
+              className={`admin-sidebar__nav-link ${active === it.key ? 'active' : ''}`}
               onClick={() => onChange(it.key)}
             >
+              <i className={`fa ${it.icon}`}></i>
               {it.label}
             </button>
-          ))}
-
-          {/* Settings Section */}
-          <div>
-            <button
-              type="button"
-              className={`list-group-item list-group-item-action text-start d-flex justify-content-between align-items-center ${active === 'settings' || active === 'sliders' ? 'active' : ''}`}
-              onClick={() => toggleSection('settings')}
-            >
-              <span>Settings</span>
-              <i className={`fa-solid fa-chevron-${expandedSections.settings ? 'down' : 'right'}`}></i>
-            </button>
-            {expandedSections.settings && (
-              <div className="ms-3 border-top">
-                {settingsItems.map(it => (
-                  <button
-                    key={it.key}
-                    type="button"
-                    className={`list-group-item list-group-item-action text-start ps-4 ${active === it.key ? 'active' : ''}`}
-                    onClick={() => onChange(it.key)}
-                  >
-                    {it.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
-}
+});
+
+export default AdminSidebar;
