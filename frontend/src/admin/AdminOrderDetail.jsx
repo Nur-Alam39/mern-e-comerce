@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import axios from '../utils/api';
-import AdminSidebar from './AdminSidebar';
+import AdminPageLayout from './AdminPageLayout';
 
 export default function AdminOrderDetail() {
     const { id } = useParams();
@@ -15,6 +15,7 @@ export default function AdminOrderDetail() {
     const [loading, setLoading] = useState(true);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [newStatus, setNewStatus] = useState('');
+    const [expandedShipments, setExpandedShipments] = useState(new Set());
 
     useEffect(() => {
         loadOrder();
@@ -28,11 +29,11 @@ export default function AdminOrderDetail() {
             if (found) {
                 setOrder(found);
                 setNewStatus(found.status || 'pending');
-                    // load shipments for this order
-                    try {
-                        const sres = await axios.get(`/api/couriers?orderId=${found._id}`);
-                        setShipments(sres.data && sres.data.shipments ? sres.data.shipments : []);
-                    } catch (err) { console.log('Failed to load shipments', err); }
+                // load shipments for this order
+                try {
+                    const sres = await axios.get(`/api/couriers?orderId=${found._id}`);
+                    setShipments(sres.data && sres.data.shipments ? sres.data.shipments : []);
+                } catch (err) { console.log('Failed to load shipments', err); }
                 // Load product details for each item
                 if (found.items) {
                     const prods = {};
@@ -99,6 +100,16 @@ export default function AdminOrderDetail() {
         window.print();
     };
 
+    const toggleShipmentDetails = (shipmentId) => {
+        const newExpanded = new Set(expandedShipments);
+        if (newExpanded.has(shipmentId)) {
+            newExpanded.delete(shipmentId);
+        } else {
+            newExpanded.add(shipmentId);
+        }
+        setExpandedShipments(newExpanded);
+    };
+
     if (loading) {
         return <div className="container py-4"><p>Loading...</p></div>;
     }
@@ -118,13 +129,21 @@ export default function AdminOrderDetail() {
     };
 
     return (
-        <div className='container'>
+        <AdminPageLayout
+            title={`Order #${order._id.slice(0, 12)}`}
+            actions={
+                <>
+                    <button className="btn btn-secondary" onClick={() => navigate('/admin?section=orders')}>
+                        ← Back to Orders
+                    </button>
+                    <button className="btn btn-outline-secondary" onClick={handlePrintInvoice}>
+                        🖨️ Print Invoice
+                    </button>
+                </>
+            }
+        >
             <div className="row">
-                <div className="col-md-3 mb-3">
-                    <AdminSidebar active="orders" onChange={(s) => navigate(`/admin?section=${s}`)} />
-                </div>
-                <div className="col-md-9">
-                    <button className="btn btn-secondary mb-3" onClick={() => navigate('/admin?section=orders')}>← Back to Orders</button>
+                <div className="col-md-12">
 
                     <div className="card">
                         <div className="card-body">
@@ -164,9 +183,6 @@ export default function AdminOrderDetail() {
                                             {order.status}
                                         </span>
                                     </div>
-                                    <button className="btn btn-outline-secondary btn-sm" onClick={handlePrintInvoice}>
-                                        🖨️ Print Invoice
-                                    </button>
                                 </div>
                             </div>
 
@@ -291,11 +307,29 @@ export default function AdminOrderDetail() {
                                                             {' '}
                                                             {s.labelUrl ? <a href={s.labelUrl} target="_blank" rel="noreferrer">Label</a> : null}
                                                         </div>
+                                                        {s.metadata && (
+                                                            <div className="mt-2">
+                                                                <button
+                                                                    className="btn btn-sm btn-outline-info"
+                                                                    onClick={() => toggleShipmentDetails(s._id)}
+                                                                >
+                                                                    {expandedShipments.has(s._id) ? 'Hide' : 'Show'} API Response
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="text-end">
                                                         <small className="text-muted">Created {new Date(s.createdAt).toLocaleString()}</small>
                                                     </div>
                                                 </div>
+                                                {expandedShipments.has(s._id) && s.metadata && (
+                                                    <div className="mt-3 p-3 bg-light rounded">
+                                                        <h6>Shipment API Response:</h6>
+                                                        <pre className="mb-0" style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>
+                                                            {JSON.stringify(s.metadata, null, 2)}
+                                                        </pre>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -305,6 +339,6 @@ export default function AdminOrderDetail() {
                     </div>
                 </div>
             </div>
-        </div>
+        </AdminPageLayout>
     );
 }
