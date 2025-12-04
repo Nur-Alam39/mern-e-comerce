@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../utils/api';
+import AdminPageLayout from './AdminPageLayout';
 
 export default function AdminSettings() {
     // Helper function to get full image URL
@@ -23,6 +24,7 @@ export default function AdminSettings() {
     const [whatsapp, setWhatsapp] = useState('');
     const [brandLogo, setBrandLogo] = useState(null);
     const [brandLogoPreview, setBrandLogoPreview] = useState('');
+    const [courierProviders, setCourierProviders] = useState([]);
 
 
     const socialIconOptions = [
@@ -58,7 +60,8 @@ export default function AdminSettings() {
             setAddress(res.data.address || '');
             setWhatsapp(res.data.whatsapp || '');
             setBrandLogoPreview(res.data.brandLogo || '');
-    } catch (err) {
+            setCourierProviders(res.data.courierProviders || []);
+        } catch (err) {
             console.log('Failed to load settings', err);
         } finally {
             setLoading(false);
@@ -78,6 +81,7 @@ export default function AdminSettings() {
             formData.append('productListPagination', productListPagination);
             formData.append('address', address);
             formData.append('whatsapp', whatsapp);
+            formData.append('courierProviders', JSON.stringify(courierProviders));
             if (brandLogo) {
                 formData.append('brandLogo', brandLogo);
             }
@@ -101,8 +105,18 @@ export default function AdminSettings() {
     if (loading) return <p>Loading...</p>;
 
     return (
-        <div>
-            <h3 className="mb-4">Settings</h3>
+        <AdminPageLayout
+            title="Settings"
+            actions={
+                <button
+                    className="btn btn-primary"
+                    onClick={handleSaveSettings}
+                    disabled={saving}
+                >
+                    {saving ? 'Saving...' : 'Save Settings'}
+                </button>
+            }
+        >
 
             {/* Brand & Theme Settings */}
             <div className="row mb-4">
@@ -338,6 +352,189 @@ export default function AdminSettings() {
                 </div>
             </div>
 
+            {/* Courier Providers */}
+            <div className="row mb-4">
+                <div className="col-md-12">
+                    <div className="card">
+                        <div className="card-header">
+                            <h5>Courier Providers</h5>
+                        </div>
+                        <div className="card-body">
+                            {courierProviders.map((provider, index) => (
+                                <div key={index} className="mb-3 border-bottom pb-3">
+                                    <div className="row">
+                                        <div className="col-md-3 mb-2">
+                                            <label className="form-label">Provider Name</label>
+                                            <select
+                                                className="form-select"
+                                                value={provider.name}
+                                                onChange={(e) => {
+                                                    const updated = [...courierProviders];
+                                                    updated[index].name = e.target.value;
+                                                    setCourierProviders(updated);
+                                                }}
+                                            >
+                                                <option value="pathao">Pathao</option>
+                                                <option value="steadfast">Steadfast</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-md-2 mb-2">
+                                            <label className="form-label">Enabled</label>
+                                            <div className="form-check form-switch">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    checked={provider.enabled || false}
+                                                    onChange={(e) => {
+                                                        const updated = [...courierProviders];
+                                                        updated[index].enabled = e.target.checked;
+                                                        setCourierProviders(updated);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6 mb-2">
+                                            <label className="form-label">Configuration</label>
+                                            {provider.name === 'pathao' ? (
+                                                <div>
+                                                    <div className="row mb-2">
+                                                        <div className="col-md-6">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control mb-2"
+                                                                placeholder="Client ID"
+                                                                value={provider.config?.clientId || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, clientId: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="form-control mb-2"
+                                                                placeholder="Client Secret"
+                                                                value={provider.config?.clientSecret || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, clientSecret: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <input
+                                                                type="email"
+                                                                className="form-control mb-2"
+                                                                placeholder="Username (Email)"
+                                                                value={provider.config?.username || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, username: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                            <input
+                                                                type="password"
+                                                                className="form-control mb-2"
+                                                                placeholder="Password"
+                                                                value={provider.config?.password || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, password: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                placeholder="Store ID"
+                                                                value={provider.config?.storeId || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, storeId: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <small className="text-muted">Enter your Pathao API credentials and store ID</small>
+                                                </div>
+                                            ) : provider.name === 'steadfast' ? (
+                                                <div>
+                                                    <div className="row mb-2">
+                                                        <div className="col-md-6">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control mb-2"
+                                                                placeholder="API Key"
+                                                                value={provider.config?.apiKey || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, apiKey: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                placeholder="Secret Key"
+                                                                value={provider.config?.secretKey || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...courierProviders];
+                                                                    updated[index].config = { ...updated[index].config, secretKey: e.target.value };
+                                                                    setCourierProviders(updated);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <small className="text-muted">Enter your Steadfast API credentials</small>
+                                                </div>
+                                            ) : (
+                                                <textarea
+                                                    className="form-control"
+                                                    value={JSON.stringify(provider.config || {}, null, 2)}
+                                                    onChange={(e) => {
+                                                        try {
+                                                            const updated = [...courierProviders];
+                                                            updated[index].config = JSON.parse(e.target.value);
+                                                            setCourierProviders(updated);
+                                                        } catch (err) {
+                                                            // Invalid JSON, ignore
+                                                        }
+                                                    }}
+                                                    placeholder='{"apiKey": "your-api-key", "secretKey": "your-secret-key"}'
+                                                    rows="3"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="col-md-1 mb-2 d-flex align-items-end">
+                                            <button
+                                                className="btn btn-outline-danger btn-sm"
+                                                onClick={() => {
+                                                    const updated = courierProviders.filter((_, i) => i !== index);
+                                                    setCourierProviders(updated);
+                                                }}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <button
+                                className="btn btn-outline-primary"
+                                onClick={() => setCourierProviders([...courierProviders, { name: 'steadfast', enabled: false, config: {} }])}
+                            >
+                                Add Courier Provider
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div className="row">
                 {/* Currency Settings */}
                 <div className="col-md-6 mb-4">
@@ -370,16 +567,6 @@ export default function AdminSettings() {
                 {/* Payment Methods moved to separate Admin page */}
             </div>
 
-            {/* Save Button */}
-            <div className="mb-4">
-                <button
-                    className="btn btn-primary"
-                    onClick={handleSaveSettings}
-                    disabled={saving}
-                >
-                    {saving ? 'Saving...' : 'Save Settings'}
-                </button>
-            </div>
 
             {/* Info */}
             <div className="alert alert-info">
@@ -393,9 +580,10 @@ export default function AdminSettings() {
                     <li><strong>Address:</strong> Store address displayed in the footer</li>
                     <li><strong>WhatsApp Number:</strong> WhatsApp contact number displayed in the footer</li>
                     <li><strong>Brand Logo:</strong> Logo image displayed in the footer</li>
+                    <li><strong>Courier Providers:</strong> Configure shipping providers - Steadfast (API Key & Secret Key) or Pathao (Client ID, Client Secret, Username, Password, Store ID)</li>
                     <li>Changes are saved to the database and will be applied across the entire store</li>
                 </ul>
             </div>
-        </div>
+        </AdminPageLayout>
     );
 }
