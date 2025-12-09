@@ -26,7 +26,8 @@ const orderSchema = new mongoose.Schema({
     email: String,
   },
   paymentMethod: { type: String, default: 'Cash on Delivery' },
+  paymentResponse: mongoose.Schema.Types.Mixed, // Store payment gateway response details
   totalPrice: { type: Number, required: true },
-  status: { type: String, enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'], default: 'Pending' },
+  status: { type: String, enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Paid', 'Payment Failed'], default: 'Pending' },
 }, { timestamps: true });
 module.exports = mongoose.model('Order', orderSchema);
