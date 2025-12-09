@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import axios from '../utils/api';
-import AdminPageLayout from './AdminPageLayout';
 
 export default function AdminOrderDetail() {
     const { id } = useParams();
@@ -16,6 +15,7 @@ export default function AdminOrderDetail() {
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [newStatus, setNewStatus] = useState('');
     const [expandedShipments, setExpandedShipments] = useState(new Set());
+    const [showPaymentResponse, setShowPaymentResponse] = useState(false);
 
     useEffect(() => {
         loadOrder();
@@ -129,19 +129,18 @@ export default function AdminOrderDetail() {
     };
 
     return (
-        <AdminPageLayout
-            title={`Order #${order._id.slice(0, 12)}`}
-            actions={
-                <>
+        <div>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h3>Order Detils</h3>
+                <div className="d-flex gap-2">
                     <button className="btn btn-secondary" onClick={() => navigate('/admin?section=orders')}>
                         ← Back to Orders
                     </button>
                     <button className="btn btn-outline-secondary" onClick={handlePrintInvoice}>
                         🖨️ Print Invoice
                     </button>
-                </>
-            }
-        >
+                </div>
+            </div>
             <div className="row">
                 <div className="col-md-12">
 
@@ -250,6 +249,29 @@ export default function AdminOrderDetail() {
                                 </div>
                             </div>
 
+                            {/* Payment Response */}
+                            {order.paymentResponse && (
+                                <div className="mb-4">
+                                    <h5>Payment Response</h5>
+                                    <div className="mb-3">
+                                        <button
+                                            className="btn btn-sm btn-outline-info"
+                                            onClick={() => setShowPaymentResponse(!showPaymentResponse)}
+                                        >
+                                            {showPaymentResponse ? 'Hide' : 'Show'} SSL Commerz Payment Details
+                                        </button>
+                                    </div>
+                                    {showPaymentResponse && (
+                                        <div className="p-3 bg-light rounded">
+                                            <h6>SSL Commerz Payment Details:</h6>
+                                            <pre className="mb-0" style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap', maxHeight: '400px', overflow: 'auto' }}>
+                                                {JSON.stringify(order.paymentResponse, null, 2)}
+                                            </pre>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Shipping Address */}
                             {order.shippingInfo && (
                                 <div className="mb-4">
@@ -339,6 +361,6 @@ export default function AdminOrderDetail() {
                     </div>
                 </div>
             </div>
-        </AdminPageLayout>
+        </div>
     );
 }
