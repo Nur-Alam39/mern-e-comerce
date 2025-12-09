@@ -34,7 +34,7 @@ const create = async (req, res) => {
 
     // Get settings for courier config
     const settings = await Settings.findOne();
-    const courierConfig = settings?.courierProviders?.find(cp => cp.name === provider && cp.enabled);
+    const courierConfig = settings && settings.courierProviders && settings.courierProviders.find(cp => cp.name === provider && cp.enabled);
     if (!courierConfig) {
       return res.status(400).json({ message: 'Courier provider not configured or disabled' });
     }
@@ -42,10 +42,10 @@ const create = async (req, res) => {
     const adapter = getProvider(provider, courierConfig.config);
     const payload = shippingInfo || (order ? {
       invoice: `ORD-${order._id.toString().slice(-8)}`, // Create a shorter, unique invoice ID
-      recipient_name: order.shippingInfo?.name || 'N/A',
-      recipient_phone: order.shippingInfo?.phone || '',
-      recipient_address: `${order.shippingInfo?.address || ''}${order.shippingInfo?.city ? ', ' + order.shippingInfo.city : ''}${order.shippingInfo?.postalCode ? ', ' + order.shippingInfo.postalCode : ''}${order.shippingInfo?.country ? ', ' + order.shippingInfo.country : ''}`,
-      recipient_email: order.shippingInfo?.email || '',
+      recipient_name: (order.shippingInfo && order.shippingInfo.name) || 'N/A',
+      recipient_phone: (order.shippingInfo && order.shippingInfo.phone) || '',
+      recipient_address: `${(order.shippingInfo && order.shippingInfo.address) || ''}${(order.shippingInfo && order.shippingInfo.city) ? ', ' + order.shippingInfo.city : ''}${(order.shippingInfo && order.shippingInfo.postalCode) ? ', ' + order.shippingInfo.postalCode : ''}${(order.shippingInfo && order.shippingInfo.country) ? ', ' + order.shippingInfo.country : ''}`,
+      recipient_email: (order.shippingInfo && order.shippingInfo.email) || '',
       cod_amount: order.totalPrice || 0,
     } : null);
 
@@ -103,7 +103,7 @@ const bulkCreate = async (req, res) => {
 
     // Get settings for courier config
     const settings = await Settings.findOne();
-    const courierConfig = settings?.courierProviders?.find(cp => cp.name === provider && cp.enabled);
+    const courierConfig = settings && settings.courierProviders && settings.courierProviders.find(cp => cp.name === provider && cp.enabled);
     if (!courierConfig) {
       return res.status(400).json({ message: 'Courier provider not configured or disabled' });
     }
@@ -132,10 +132,10 @@ const bulkCreate = async (req, res) => {
 
       const payload = orderItem.shippingInfo || (order ? {
         invoice: order._id.toString(),
-        recipient_name: order.shippingInfo?.name || 'N/A',
-        recipient_phone: order.shippingInfo?.phone || '',
-        recipient_address: `${order.shippingInfo?.address || ''}${order.shippingInfo?.city ? ', ' + order.shippingInfo.city : ''}${order.shippingInfo?.postalCode ? ', ' + order.shippingInfo.postalCode : ''}${order.shippingInfo?.country ? ', ' + order.shippingInfo.country : ''}`,
-        recipient_email: order.shippingInfo?.email || '',
+        recipient_name: (order.shippingInfo && order.shippingInfo.name) || 'N/A',
+        recipient_phone: (order.shippingInfo && order.shippingInfo.phone) || '',
+        recipient_address: `${(order.shippingInfo && order.shippingInfo.address) || ''}${(order.shippingInfo && order.shippingInfo.city) ? ', ' + order.shippingInfo.city : ''}${(order.shippingInfo && order.shippingInfo.postalCode) ? ', ' + order.shippingInfo.postalCode : ''}${(order.shippingInfo && order.shippingInfo.country) ? ', ' + order.shippingInfo.country : ''}`,
+        recipient_email: (order.shippingInfo && order.shippingInfo.email) || '',
         cod_amount: order.totalPrice || 0,
         note: orderItem.note || '',
         item_description: orderItem.item_description || '',
@@ -166,7 +166,7 @@ const bulkCreate = async (req, res) => {
         // Pathao doesn't provide immediate tracking URLs for bulk orders
 
         const ship = new Shipment({
-          order: mapping?.orderId || null,
+          order: (mapping && mapping.orderId) || null,
           provider: provider,
           providerShipmentId: result.consignment_id || result.merchant_order_id,
           trackingUrl: trackingUrl,
@@ -180,13 +180,13 @@ const bulkCreate = async (req, res) => {
         shipments.push(ship);
 
         // Update order status if applicable
-        if (mapping?.orderId) {
+        if (mapping && mapping.orderId) {
           await Order.findByIdAndUpdate(mapping.orderId, { status: 'Shipped' });
         }
       } else if (result.status === 'processing') {
         // For async processing (like Pathao bulk), create shipment with processing status
         const ship = new Shipment({
-          order: mapping?.orderId || null,
+          order: (mapping && mapping.orderId) || null,
           provider: provider,
           providerShipmentId: result.merchant_order_id,
           trackingUrl: '',
@@ -200,7 +200,7 @@ const bulkCreate = async (req, res) => {
         shipments.push(ship);
 
         // Update order status if applicable
-        if (mapping?.orderId) {
+        if (mapping && mapping.orderId) {
           await Order.findByIdAndUpdate(mapping.orderId, { status: 'Processing' });
         }
       }
@@ -224,7 +224,7 @@ const getStatus = async (req, res) => {
 
     // Get settings for courier config
     const settings = await Settings.findOne();
-    const courierConfig = settings?.courierProviders?.find(cp => cp.name === provider && cp.enabled);
+    const courierConfig = settings && settings.courierProviders && settings.courierProviders.find(cp => cp.name === provider && cp.enabled);
     if (!courierConfig) {
       return res.status(400).json({ message: 'Courier provider not configured or disabled' });
     }

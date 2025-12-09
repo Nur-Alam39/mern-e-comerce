@@ -1,6 +1,8 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const ProductVariation = require('../models/ProductVariation');
+const Settings = require('../models/Settings');
+const sslCommerzService = require('../services/sslCommerzService');
 
 exports.createOrder = async (req, res) => {
   try {
@@ -69,8 +71,41 @@ exports.createOrder = async (req, res) => {
       });
     }
     const order = new Order({ user: req.user ? req.user._id : null, items: preparedItems, shippingInfo, paymentMethod: paymentMethod || 'Cash on Delivery', totalPrice });
-    await order.save();
-    res.status(201).json(order);
+
+    if (paymentMethod === 'ssl_commerce') {
+      await order.save(); // Save order first
+
+      try {
+        const paymentResult = await sslCommerzService.initiatePayment({
+          totalPrice,
+          orderId: order._id.toString(),
+          protocol: req.protocol,
+          host: req.get('host'),
+          productNames: preparedItems.map(it => it.name).join(', '),
+          customerName: shippingInfo.name,
+          customerEmail: shippingInfo.email,
+          customerAddress: shippingInfo.address,
+          customerCity: shippingInfo.city,
+          customerPostcode: shippingInfo.postalCode,
+          customerCountry: shippingInfo.country,
+          customerPhone: shippingInfo.phone
+        });
+
+        if (paymentResult.success) {
+          res.status(200).json({ gatewayUrl: paymentResult.gatewayUrl, orderId: order._id });
+        } else {
+          await Order.findByIdAndUpdate(order._id, { status: 'Payment Failed' });
+          res.status(400).json({ message: paymentResult.error });
+        }
+      } catch (error) {
+        console.error('SSL Commerz API error:', error);
+        await Order.findByIdAndUpdate(order._id, { status: 'Payment Failed' });
+        res.status(500).json({ message: 'Payment gateway error' });
+      }
+    } else {
+      await order.save();
+      res.status(201).json(order);
+    }
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Server error: ' + err.message });
@@ -135,6 +170,79 @@ exports.updateOrderStatus = async (req, res) => {
     res.json(order);
   } catch (err) {
     console.log(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// SSL Commerz handlers
+exports.sslSuccess = async (req, res) => {
+  try {
+    const { tran_id } = req.body;
+    const order = await Order.findById(tran_id);
+    if (!order) return res.status(404).send('Order not found');
+
+    // If SSL Commerz redirected to success, assume payment is successful
+    order.status = 'Paid';
+    order.paymentResponse = req.body; // Save SSL Commerz response details
+    await order.save();
+
+    // Redirect to frontend success page
+    res.redirect(`${req.protocol}://${req.get('host').replace('5000', '3000')}/order/${order._id}?payment=success`);
+  } catch (err) {
+    console.log('SSL Success error:', err);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.sslFail = async (req, res) => {
+  try {
+    const { tran_id } = req.body;
+    const order = await Order.findById(tran_id);
+    if (order) {
+      order.status = 'Payment Failed';
+      order.paymentResponse = req.body; // Save SSL Commerz response details
+      await order.save();
+    }
+    res.redirect(`${req.protocol}://${req.get('host').replace('5000', '3000')}/order/${tran_id}?payment=failed`);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.sslCancel = async (req, res) => {
+  try {
+    const { tran_id } = req.body;
+    const order = await Order.findById(tran_id);
+    if (order) {
+      order.status = 'Payment Failed';
+      order.paymentResponse = req.body; // Save SSL Commerz response details
+      await order.save();
+    }
+    res.redirect(`${req.protocol}://${req.get('host').replace('5000', '3000')}/order/${tran_id}?payment=cancelled`);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.sslIpn = async (req, res) => {
+  try {
+    const { tran_id, val_id, status } = req.body;
+    const order = await Order.findById(tran_id);
+    if (!order) return res.status(200).json({ message: 'Order not found' });
+
+    // For IPN, we can trust the status sent by SSL Commerz
+    if (status === 'VALID' || status === 'VALIDATED') {
+      order.status = 'Paid';
+      await order.save();
+    } else if (status === 'FAILED' || status === 'CANCELLED') {
+      order.status = 'Payment Failed';
+      await order.save();
+    }
+    res.status(200).json({ message: 'IPN received' });
+  } catch (err) {
+    console.log('SSL IPN error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

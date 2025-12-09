@@ -59,8 +59,8 @@ class PathaoAdapter extends BaseAdapter {
         throw new Error('Failed to obtain access token');
       }
     } catch (error) {
-      console.error('Pathao token error:', error.response?.data || error.message);
-      throw new Error(`Pathao token error: ${error.response?.data?.message || error.message}`);
+      console.error('Pathao token error:', (error.response && error.response.data) || error.message);
+      throw new Error(`Pathao token error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 
@@ -88,7 +88,7 @@ class PathaoAdapter extends BaseAdapter {
       item_quantity: shippingInfo.item_quantity || shippingInfo.total_lot || 1,
       item_weight: shippingInfo.item_weight || 0.5,
       item_description: shippingInfo.item_description || '',
-      amount_to_collect: shippingInfo.amount_to_collect || shippingInfo.cod_amount || shippingInfo.amount || 0,
+      amount_to_collect: Math.round(shippingInfo.amount_to_collect || shippingInfo.cod_amount || shippingInfo.amount || 0),
     };
 
     // Add optional fields if provided
@@ -135,8 +135,15 @@ class PathaoAdapter extends BaseAdapter {
         metadata: data.data,
       };
     } catch (error) {
-      console.error('Pathao create order error:', error.response?.data || error.message);
-      throw new Error(`Pathao API error: ${error.response?.data?.message || error.message}`);
+      console.error('Pathao create order error:', (error.response && error.response.data) || error.message);
+
+      // Handle Pathao API validation errors
+      if (error.response && error.response.data && error.response.data.errors) {
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        throw new Error(`Pathao validation error: ${errorMessages.join(', ')}`);
+      }
+
+      throw new Error(`Pathao API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 
@@ -159,7 +166,7 @@ class PathaoAdapter extends BaseAdapter {
       item_quantity: order.item_quantity || order.total_lot || 1,
       item_weight: order.item_weight || 0.5,
       item_description: order.item_description || '',
-      amount_to_collect: order.amount_to_collect || order.cod_amount || order.amount || 0,
+      amount_to_collect: Math.round(order.amount_to_collect || order.cod_amount || order.amount || 0),
       ...(order.recipient_secondary_phone && { recipient_secondary_phone: order.recipient_secondary_phone }),
       ...(order.recipient_city && { recipient_city: order.recipient_city }),
       ...(order.recipient_zone && { recipient_zone: order.recipient_zone }),
@@ -190,8 +197,15 @@ class PathaoAdapter extends BaseAdapter {
         error: null,
       }));
     } catch (error) {
-      console.error('Pathao bulk order error:', error.response?.data || error.message);
-      throw new Error(`Pathao bulk API error: ${error.response?.data?.message || error.message}`);
+      console.error('Pathao bulk order error:', (error.response && error.response.data) || error.message);
+
+      // Handle Pathao API validation errors
+      if (error.response && error.response.data && error.response.data.errors) {
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        throw new Error(`Pathao validation error: ${errorMessages.join(', ')}`);
+      }
+
+      throw new Error(`Pathao bulk API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 }
@@ -281,8 +295,8 @@ class SteadfastAdapter extends BaseAdapter {
         metadata: consignment,
       };
     } catch (error) {
-      console.error('Steadfast create order error:', error.response?.data || error.message);
-      throw new Error(`Steadfast API error: ${error.response?.data?.message || error.message}`);
+      console.error('Steadfast create order error:', (error.response && error.response.data) || error.message);
+      throw new Error(`Steadfast API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 
@@ -323,8 +337,8 @@ class SteadfastAdapter extends BaseAdapter {
         error: item.status === 'error' ? 'Failed to create' : null,
       }));
     } catch (error) {
-      console.error('Steadfast bulk order error:', error.response?.data || error.message);
-      throw new Error(`Steadfast bulk API error: ${error.response?.data?.message || error.message}`);
+      console.error('Steadfast bulk order error:', (error.response && error.response.data) || error.message);
+      throw new Error(`Steadfast bulk API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 
@@ -355,8 +369,8 @@ class SteadfastAdapter extends BaseAdapter {
 
       return response.data;
     } catch (error) {
-      console.error('Steadfast status check error:', error.response?.data || error.message);
-      throw new Error(`Steadfast status API error: ${error.response?.data?.message || error.message}`);
+      console.error('Steadfast status check error:', (error.response && error.response.data) || error.message);
+      throw new Error(`Steadfast status API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 }
