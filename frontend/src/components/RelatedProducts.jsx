@@ -16,6 +16,22 @@ export default function RelatedProducts({ categoryId, currentId, limit = 10 }) {
   const { addToCart } = useCart();
   const { formatPrice } = useSettings();
 
+  const NextArrow = ({ onClick }) => {
+    return (
+      <button className="slick-next-btn" onClick={onClick}>
+        <span><i className="fa fa-chevron-right"></i></span>
+      </button>
+    );
+  };
+
+  const PrevArrow = ({ onClick }) => {
+    return (
+      <button className="slick-prev-btn" onClick={onClick}>
+        <span><i className="fa fa-chevron-left"></i></span>
+      </button>
+    );
+  };
+
   const settings = {
     dots: true,
     arrows: true,
@@ -27,6 +43,9 @@ export default function RelatedProducts({ categoryId, currentId, limit = 10 }) {
     centerMode: false,
     swipe: false,
     draggable: false,
+    nextArrow: <NextArrow />,
+    prevArrow: <PrevArrow />,
+    dotsClass: "custom-slick-dots",
     responsive: [
       {
         breakpoint: 768,
@@ -63,7 +82,7 @@ export default function RelatedProducts({ categoryId, currentId, limit = 10 }) {
 
   return (
     <section className="py-5">
-      <h5 className="mb-3 mt-5">Related Products</h5>
+      <h3 className="mb-3 mt-5 fw-bold">Related Products</h3>
       <div className={items.length < 4 ? "few-items" : ""}>
         <Slider {...settings}>
           {items.map(p => (

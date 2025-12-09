@@ -30,6 +30,9 @@ export default function AdminProducts() {
       if (newArrivalFilter) params.append('newArrival', newArrivalFilter);
       if (minPrice) params.append('minPrice', minPrice);
       if (maxPrice) params.append('maxPrice', maxPrice);
+      if (filterStatus !== 'all') {
+        params.append('active', filterStatus === 'active' ? 'true' : 'false');
+      }
       const query = params.toString() ? `?${params.toString()}` : '';
 
       const res = await axios.get(`/api/products${query}`);
@@ -68,7 +71,7 @@ export default function AdminProducts() {
       if (mounted) setLoading(false);
     })();
     return () => { mounted = false; };
-  }, [search, categoryFilter, newArrivalFilter, minPrice, maxPrice]);
+  }, [search, categoryFilter, newArrivalFilter, minPrice, maxPrice, filterStatus]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -89,13 +92,7 @@ export default function AdminProducts() {
     }
   };
 
-  // Filter products by status
-  const filteredProducts = products.filter(p => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'active') return p.active !== false;
-    if (filterStatus === 'inactive') return p.active === false;
-    return true;
-  });
+  // Products are now filtered on backend
 
   return (
     <div>
@@ -169,8 +166,8 @@ export default function AdminProducts() {
       {loading ? <p>Loading...</p> : (
         <>
           <div className="table-responsive">
-            <table className="table table-sm">
-              <thead className="table-light">
+            <table className="table">
+              <thead>
                 <tr>
                   <th>Name</th>
                   <th>Price</th>
@@ -182,7 +179,7 @@ export default function AdminProducts() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map(p => (
+                {products.map(p => (
                   <tr key={p._id} className={p.active ? '' : 'table-secondary'}>
                     <td>{p.name}</td>
                     <td>{formatPrice(p.price)}</td>

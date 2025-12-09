@@ -140,9 +140,14 @@ export default function Checkout() {
       };
       console.log('Order payload:', payload);
       const res = await axios.post('/api/orders', payload);
-      clearCart();
-      setToast('Order placed successfully!');
-      setTimeout(() => navigate(user ? '/profile?tab=orders' : `/order/${res.data._id}`), 100);
+      if (res.data.gatewayUrl) {
+        // Redirect to SSL Commerz gateway
+        window.location.href = res.data.gatewayUrl;
+      } else {
+        clearCart();
+        setToast('Order placed successfully!');
+        setTimeout(() => navigate(user ? '/profile?tab=orders' : `/order/${res.data._id}`), 100);
+      }
     } catch (err) {
       console.log('Order failed', err.response?.data || err.message);
       alert('Order failed: ' + (err.response?.data?.message || err.message));
@@ -163,6 +168,10 @@ export default function Checkout() {
   return (
     <div className="container py-4">
       <h2>Checkout</h2>
+      <div className="mb-4">
+        <button className="btn btn-outline-secondary me-2" onClick={() => navigate('/cart')}>Back to Cart</button>
+        <button className="btn btn-outline-primary" onClick={() => navigate('/products')}>Continue Shopping</button>
+      </div>
       <div className="row">
         {/* Shipping Form */}
         <div className="col-md-6">
@@ -307,7 +316,7 @@ export default function Checkout() {
                   className="btn btn-success w-100"
                   disabled={loading}
                 >
-                  {loading ? 'Placing Order...' : `Place Order (${paymentMethod === 'cash_on_delivery' ? 'COD' : PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod})`}
+                  {loading ? 'Placing Order...' : `Place Order (${paymentMethod === 'cash_on_delivery' ? 'COD' : (PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod)})`}
                 </button>
               </form>
             </div>
@@ -355,7 +364,7 @@ export default function Checkout() {
           </div>
         </div>
 
-    
+
       </div>
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>

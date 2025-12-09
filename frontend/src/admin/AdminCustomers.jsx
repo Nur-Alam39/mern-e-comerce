@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from '../utils/api';
 
 export default function AdminCustomers() {
@@ -90,8 +91,8 @@ export default function AdminCustomers() {
       ) : (
         <>
           <div className="table-responsive">
-            <table className="table table-sm table-hover">
-              <thead className="table-light">
+            <table className="table">
+              <thead>
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
@@ -116,6 +117,12 @@ export default function AdminCustomers() {
                       </span>
                     </td>
                     <td>
+                      <Link
+                        to={`/admin/customers/${u._id}`}
+                        className="btn btn-sm btn-primary me-2"
+                      >
+                        View Details
+                      </Link>
                       <button
                         className={`btn btn-sm ${u.blocked ? 'btn-success' : 'btn-warning'}`}
                         onClick={() => handleBlockUser(u._id, u.blocked)}

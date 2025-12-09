@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from '../utils/api';
 import { useSettings } from '../hooks/useSettings';
 import { useAuth } from '../context/AuthContext';
+import Toast from '../components/Toast';
 
 export default function UserOrderDetail() {
     const { id } = useParams();
@@ -13,10 +14,21 @@ export default function UserOrderDetail() {
     const [order, setOrder] = useState(null);
     const [products, setProducts] = useState({});
     const [loading, setLoading] = useState(true);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         loadOrder();
-    }, [id]);
+        // Check for payment status in URL
+        const urlParams = new URLSearchParams(location.search);
+        const payment = urlParams.get('payment');
+        if (payment === 'success') {
+            setToast('Payment successful! Your order is being processed.');
+        } else if (payment === 'failed') {
+            setToast('Payment failed. Please try again or contact support.');
+        } else if (payment === 'cancelled') {
+            setToast('Payment was cancelled.');
+        }
+    }, [id, location.search]);
 
     const loadOrder = async () => {
         try {
@@ -154,6 +166,7 @@ export default function UserOrderDetail() {
                     )}
                 </div>
             </div>
+            {toast && <Toast message={toast} onClose={() => setToast(null)} />}
         </div>
     );
 }

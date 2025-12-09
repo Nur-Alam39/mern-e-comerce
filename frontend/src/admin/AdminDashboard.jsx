@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import AdminSidebar from './AdminSidebar';
+import AdminDashboardOverview from './AdminDashboardOverview';
 import AdminProducts from './AdminProducts';
 import AdminCategories from './AdminCategories';
 import AdminOrders from './AdminOrders';
@@ -13,7 +13,7 @@ import AdminPages from './AdminPages';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminDashboard() {
-  const [active, setActive] = useState('products');
+  const [active, setActive] = useState('dashboard');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -34,6 +34,7 @@ export default function AdminDashboard() {
 
   const renderContent = () => {
     switch (active) {
+      case 'dashboard': return <AdminDashboardOverview />;
       case 'products': return <AdminProducts />;
       case 'categories': return <AdminCategories />;
       case 'orders': return <AdminOrders />;
@@ -43,21 +44,13 @@ export default function AdminDashboard() {
       case 'settings': return <AdminSettings />;
       case 'payments': return <AdminPayments />;
       case 'couriers': return <AdminCouriers />;
-      default: return <AdminProducts />;
+      default: return <AdminDashboardOverview />;
     }
   };
+return (
+  <div>
+    {renderContent()}
+  </div>
 
-  return (
-    <div>
-      <div className="row">
-        <div className="col-md-3 mb-3">
-          <AdminSidebar active={active} onChange={setActive} />
-        </div>
-        <div className="col-md-9">
-          {renderContent()}
-        </div>
-      </div>
-    </div>
-
-  );
+);
 }

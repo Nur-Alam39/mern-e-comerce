@@ -82,14 +82,7 @@ export default function AdminPageEdit() {
     return (
         <div>
             <div className="row">
-                <div className="col-md-3 mb-3">
-                    <AdminSidebar
-                        active="pages"
-                        onChange={(s) => navigate(`/admin?section=${s}`)}
-                    />
-                </div>
-
-                <div className="col-md-9">
+                <div className="col-md-12">
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h3>{id ? 'Edit Page' : 'Create Page'}</h3>
                     </div>

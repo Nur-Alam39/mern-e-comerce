@@ -87,7 +87,7 @@ export default function RecentlyViewed({ currentId, limit = 10 }) {
 
   return (
       <section className="py-5">
-        <h5 className="mb-3">Recently Viewed</h5>
+        <h3 className="mb-3 mt-5 fw-bold">Recently Viewed</h3>
         <div className={items.length < 4 ? "few-items" : ""}>
           <Slider {...settings}>
             {items.map(p => (

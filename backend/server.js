@@ -13,6 +13,7 @@ const productVariationRoutes = require('./routes/productVariationRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const courierRoutes = require('./routes/courierRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use('/api/variations', productVariationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/couriers', courierRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => res.json({ message: 'MERN E-commerce backend' }));
 

@@ -22,16 +22,16 @@ export default function FeaturesSection() {
       title: 'Secure Payment',
       description: 'Your payment information is protected with bank-level security'
     },
-    {
-      icon: 'fas fa-headset',
-      title: '24/7 Support',
-      description: 'Round-the-clock customer support for all your queries'
-    },
-    {
-      icon: 'fas fa-tags',
-      title: 'Best Prices',
-      description: 'Competitive pricing with regular discounts and offers'
-    }
+    // {
+    //   icon: 'fas fa-headset',
+    //   title: '24/7 Support',
+    //   description: 'Round-the-clock customer support for all your queries'
+    // },
+    // {
+    //   icon: 'fas fa-tags',
+    //   title: 'Best Prices',
+    //   description: 'Competitive pricing with regular discounts and offers'
+    // }
   ];
 
   return (
@@ -45,12 +45,12 @@ export default function FeaturesSection() {
         </div>
         <div className="row g-4">
           {features.map((feature, index) => (
-            <div key={index} className="col-lg-4 col-md-6">
+            <div key={index} className="col-lg-3 col-md-6">
               <div className="feature-card text-center p-2 h-100">
                 <div className="feature-icon mb-3">
-                  <i className={`${feature.icon} fa-2x text-dark`}></i>
+                  <i className={`${feature.icon} fa-2x text-secondary`}></i>
                 </div>
-                <h6 className="feature-title mb-3">{feature.title}</h6>
+                <div className="feature-title">{feature.title}</div>
                 <p className="feature-description text-muted mb-0">{feature.description}</p>
               </div>
             </div>

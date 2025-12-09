@@ -62,8 +62,8 @@ export default function AdminPages() {
 
       {loading ? <p>Loading...</p> : (
         <div className="table-responsive">
-          <table className="table table-sm table-hover">
-            <thead className="table-light">
+          <table className="table">
+            <thead>
               <tr>
                 <th>Title</th>
                 <th>Slug</th>

@@ -27,12 +27,12 @@ export default function Cart() {
                     {item.size && <p className="mb-1"><small className="text-muted">Size: {item.size}</small></p>}
                     <p>{formatPrice(item.price)}</p>
                     <div className="input-group" style={{width: 140}}>
-                      <button className="btn btn-outline-secondary border"
+                      <button className="btn btn-outline-secondary border" style={{borderRadius: 0}}
                               onClick={() => updateQty(item.product, Math.max(1, item.qty - 1), item.variationId)}>-
                       </button>
                       <input className="form-control text-center" value={item.qty}
                              onChange={(e) => updateQty(item.product, Number(e.target.value) || 1, item.variationId)}/>
-                      <button className="btn btn-outline-secondary  border"
+                      <button className="btn btn-outline-secondary  border" style={{borderRadius: 0}}
                               onClick={() => updateQty(item.product, item.qty + 1, item.variationId)}>+
                       </button>
                     </div>

@@ -204,6 +204,7 @@ export default function ProductDetail() {
           <div className="input-group" style={{ width: 150 }}>
             <button
               className="btn btn-outline-secondary border"
+              style={{borderRadius: 0}}
               onClick={() => setQty(Math.max(1, qty - 1))}
             >
               -
@@ -217,6 +218,7 @@ export default function ProductDetail() {
             />
             <button
               className="btn btn-outline-secondary border"
+              style={{borderRadius: 0}}
               onClick={() => setQty(qty + 1)}
             >
               +
@@ -225,7 +227,7 @@ export default function ProductDetail() {
         </div>
 
         <button
-          className="btn btn-dark"
+          className="btn btn-dark rounded-0"
           onClick={handleAddToCart}
           disabled={variations.length > 0 && !selectedSize}
         >

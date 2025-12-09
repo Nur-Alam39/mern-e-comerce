@@ -4,6 +4,10 @@ const orderCtrl = require('../controllers/orderController');
 const { protect, admin, optionalAuth } = require('../middleware/auth');
 
 router.post('/', optionalAuth, orderCtrl.createOrder); // allow guest orders if no token provided
+router.post('/ssl-success', orderCtrl.sslSuccess);
+router.post('/ssl-fail', orderCtrl.sslFail);
+router.post('/ssl-cancel', orderCtrl.sslCancel);
+router.post('/ssl-ipn', orderCtrl.sslIpn);
 router.get('/', protect, admin, orderCtrl.getOrders);
 router.get('/myorders', protect, orderCtrl.getMyOrders);
 router.get('/:id', optionalAuth, orderCtrl.getOrderById);

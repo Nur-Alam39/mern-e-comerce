@@ -37,7 +37,7 @@ export default function Footer() {
           <div className="col-md-4 mb-3">
             {brandLogo && (
               <div className="mb-3">
-                <img src={getImageUrl(brandLogo)} alt="Brand Logo" className='border p-2' style={{ maxWidth: '150px', maxHeight: '50px' }} />
+                <img src={getImageUrl(brandLogo)} alt="Brand Logo" style={{ maxWidth: '150px', maxHeight: '50px' }} />
               </div>
             )}
             {address && (

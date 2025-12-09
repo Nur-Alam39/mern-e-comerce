@@ -76,9 +76,6 @@ export default function AdminCategoryCreate() {
   return (
     <div>
       <div className="row">
-        <div className="col-md-3 mb-3">
-          <AdminSidebar active={searchParams.get('section') || 'categories'} onChange={(s) => navigate(`/admin?section=${s}`)} />
-        </div>
         <div className="col-md-9">
           <h3>{id ? 'Edit Category' : 'Create Category'}</h3>
           {loading ? <p>Loading...</p> : (

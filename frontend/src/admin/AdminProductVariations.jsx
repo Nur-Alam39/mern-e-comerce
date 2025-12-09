@@ -88,10 +88,7 @@ export default function AdminProductVariations() {
     return (
         <div>
             <div className="row">
-                <div className="col-md-3 mb-3">
-                    <AdminSidebar active="products" onChange={(s) => navigate(`/admin?section=${s}`)} />
-                </div>
-                <div className="col-md-9">
+                <div className="col-md-12">
                     <button className="btn btn-light mb-3" onClick={() => navigate(`/admin/products/edit/${product._id}`)}>
                       <i className='fa fa-chevron-left'></i> &nbsp; Back to Product
                     </button>

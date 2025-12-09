@@ -19,7 +19,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, featured, newArrival, bestSelling, search, minPrice, maxPrice, inStock, sort } = req.query;
+    const { category, featured, newArrival, bestSelling, search, minPrice, maxPrice, inStock, sort, active } = req.query;
     const filter = {};
 
     // Search filter
@@ -43,6 +43,10 @@ exports.getProducts = async (req, res) => {
     if (typeof bestSelling !== 'undefined') {
       if (bestSelling === 'true' || bestSelling === '1') filter.bestSelling = true;
       else if (bestSelling === 'false' || bestSelling === '0') filter.bestSelling = false;
+    }
+    if (typeof active !== 'undefined') {
+      if (active === 'true' || active === '1') filter.active = true;
+      else if (active === 'false' || active === '0') filter.active = false;
     }
 
     // inStock filter (stock > 0)

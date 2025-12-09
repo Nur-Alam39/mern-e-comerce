@@ -225,8 +225,8 @@ export default function AdminOrders() {
       ) : (
         <>
           <div className="table-responsive">
-            <table className="table table-sm table-hover">
-              <thead className="table-light">
+            <table className="table">
+              <thead>
                 <tr>
                   <th><input type="checkbox" checked={selectedOrders.length === paginatedOrders.length && paginatedOrders.length > 0} onChange={(e) => handleSelectAll(e.target.checked)} /></th>
                   <th>Date & Time</th>

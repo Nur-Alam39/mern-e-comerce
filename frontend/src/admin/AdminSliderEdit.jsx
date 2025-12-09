@@ -44,12 +44,9 @@ export default function AdminSliderEdit() {
   };
 
   return (
-    <div className='container'>
+    <div className=''>
       <div className="row">
-        <div className="col-md-3 mb-3">
-          <AdminSidebar active={'categories'} onChange={(s) => navigate(`/admin?section=${s}`)} />
-        </div>
-        <div className="col-md-9">
+        <div className="col-md-12">
           <h3>{id ? 'Edit Slider' : 'Create Slider'}</h3>
           {loading ? <p>Loading...</p> : (
             <form onSubmit={submit} style={{ maxWidth: 700 }}>

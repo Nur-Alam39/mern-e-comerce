@@ -112,25 +112,30 @@ exports.updatePaymentMethod = async (req, res) => {
 };
 
 exports.updateCourierProvider = async (req, res) => {
-    try {
-        const { name } = req.params;
-        const { enabled, config } = req.body;
+  try {
+    const { name } = req.params;
+    const { enabled, config } = req.body;
 
-        let settings = await Settings.findOne();
-        if (!settings) settings = new Settings();
+    console.log('Updating courier provider:', name, { enabled, config });
 
-        const cp = settings.courierProviders.find(c => c.name === name);
-        if (cp) {
-            if (enabled !== undefined) cp.enabled = enabled;
-            if (config) cp.config = config;
-        } else {
-            settings.courierProviders.push({ name, enabled: !!enabled, config: config || {} });
-        }
+    let settings = await Settings.findOne();
+    if (!settings) settings = new Settings();
 
-        await settings.save();
-        res.json(settings);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+    const cp = settings.courierProviders.find(c => c.name === name);
+    if (cp) {
+      if (enabled !== undefined) cp.enabled = enabled;
+      if (config) cp.config = config;
+    } else {
+      settings.courierProviders.push({ name, enabled: !!enabled, config: config || {} });
     }
+
+    await settings.save();
+
+    console.log('Saved courier provider config:', settings.courierProviders.find(c => c.name === name));
+
+    res.json(settings);
+  } catch (err) {
+    console.error('Error updating courier provider:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };

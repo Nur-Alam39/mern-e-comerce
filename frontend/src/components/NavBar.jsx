@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../hooks/useSettings';
 import axios from '../utils/api';
 
 export default function NavBar() {
+  const location = useLocation();
   const { cart } = useCart();
   const totalQty = cart.reduce((s, i) => s + i.qty, 0);
   const { user, logout } = useAuth();
-  const { brandName } = useSettings();
+  const { brandName, formatPrice } = useSettings();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -17,6 +18,7 @@ export default function NavBar() {
   const [showCategoriesMenu, setShowCategoriesMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSearchForm, setShowSearchForm] = useState(false);
+  const [cartOffcanvas, setCartOffcanvas] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -60,6 +62,10 @@ export default function NavBar() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showUserMenu]);
+
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <>
@@ -111,13 +117,13 @@ export default function NavBar() {
                   <i className={`fa-solid ${showSearchForm ? 'fa-times' : 'fa-search'}`}></i>
                 </button>
                 {showSearchForm && (
-                  <form className="d-flex" onSubmit={handleSearch} style={{maxWidth: '300px'}}>
+                  <form className="d-flex" onSubmit={handleSearch} style={{ maxWidth: '300px' }}>
                     <input
-                        className="form-control form-control"
-                        type="search"
-                        placeholder="Search products..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                      className="form-control form-control"
+                      type="search"
+                      placeholder="Search products..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                     <button className="btn btn-outline-secondary btn-sm ms-2 border" type="submit">
                       <i className="fa-solid fa-search"></i>
@@ -125,75 +131,75 @@ export default function NavBar() {
                   </form>
                 )}
 
-                <Link className="nav-link position-relative" to="/cart">
-                  <i className="fa fa-cart-shopping" style={{fontSize: '1rem'}}></i>
+                <button className="btn btn-link nav-link position-relative p-0" onClick={() => setCartOffcanvas(true)}>
+                  <i className="fa fa-cart-shopping" style={{ fontSize: '1rem' }}></i>
                   {totalQty > 0 && (
-                      <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                            style={{fontSize: '0.7rem'}}>
-                    {totalQty}
-                  </span>
+                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                      style={{ fontSize: '0.7rem' }}>
+                      {totalQty}
+                    </span>
                   )}
-                </Link>
+                </button>
 
                 <div className="position-relative">
                   <button
-                      className="btn btn-link nav-link p-0"
-                      onClick={() => setShowUserMenu(!showUserMenu)}
-                      style={{fontSize: '1rem'}}
+                    className="btn btn-link nav-link p-0"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    style={{ fontSize: '1rem' }}
                   >
                     <i className="fa-regular fa-user"></i>
                   </button>
 
                   {showUserMenu && (
-                      <div className="dropdown-menu show position-absolute end-0 mt-2" style={{minWidth: '200px'}}>
-                        {user ? (
+                    <div className="dropdown-menu show position-absolute end-0 mt-2" style={{ minWidth: '200px' }}>
+                      {user ? (
+                        <>
+                          <h6 className="dropdown-header">{user.name || user.email}</h6>
+                          <hr className="dropdown-divider m-0" />
+                          <Link className="dropdown-item" to="/profile" onClick={() => setShowUserMenu(false)}>
+                            <i className="fa fa-user me-2"></i>Profile
+                          </Link>
+                          {user.isAdmin && (
                             <>
-                              <h6 className="dropdown-header">{user.name || user.email}</h6>
-                              <hr className="dropdown-divider m-0"/>
-                              <Link className="dropdown-item" to="/profile" onClick={() => setShowUserMenu(false)}>
-                                <i className="fa fa-user me-2"></i>Profile
+                              <Link className="dropdown-item" to="/admin" onClick={() => setShowUserMenu(false)}>
+                                <i className="fa fa-gauge me-2"></i>Admin Dashboard
                               </Link>
-                              {user.isAdmin && (
-                                  <>
-                                    <Link className="dropdown-item" to="/admin" onClick={() => setShowUserMenu(false)}>
-                                      <i className="fa fa-gauge me-2"></i>Admin Dashboard
-                                    </Link>
-                                    <hr className="dropdown-divider m-0"/>
-                                  </>
-                              )}
-                              <button className="dropdown-item" onClick={handleLogout}>
-                                <i className="fa-solid fa-right-from-bracket me-2"></i>Logout
-                              </button>
+                              <hr className="dropdown-divider m-0" />
                             </>
-                        ) : (
-                            <>
-                              <Link className="dropdown-item" to="/login" onClick={() => setShowUserMenu(false)}>
-                                <i className="fa-solid fa-right-to-bracket me-2"></i>Login
-                              </Link>
-                              <Link className="dropdown-item" to="/register" onClick={() => setShowUserMenu(false)}>
-                                <i className="fa-solid fa-user-plus me-2"></i>Register
-                              </Link>
-                            </>
-                        )}
-                      </div>
+                          )}
+                          <button className="dropdown-item" onClick={handleLogout}>
+                            <i className="fa-solid fa-right-from-bracket me-2"></i>Logout
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link className="dropdown-item" to="/login" onClick={() => setShowUserMenu(false)}>
+                            <i className="fa-solid fa-right-to-bracket me-2"></i>Login
+                          </Link>
+                          <Link className="dropdown-item" to="/register" onClick={() => setShowUserMenu(false)}>
+                            <i className="fa-solid fa-user-plus me-2"></i>Register
+                          </Link>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           </div>
-          <div className="border-none border-top"></div>
+          <div className="border-none border-sm-0 border-top"></div>
           {/* Lower part: Categories */}
           <div className="container d-none d-lg-flex justify-content-center align-items-center gap-3 px-3 pt-2 flex-nowrap navbar-categories">
-            <Link className="nav-link" to="/products" style={{textTransform: 'uppercase', fontSize: '0.9rem'}}>SHOP</Link>
+            <Link className="nav-link" to="/products" style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}>SHOP</Link>
             {categories.map(cat => (
-                <Link
-                    key={cat._id}
-                    className="nav-link"
-                    to={`/products?category=${cat._id}`}
-                    style={{textTransform: 'uppercase', fontSize: '0.9rem'}}
-                >
-                  {cat.name}
-                </Link>
+              <Link
+                key={cat._id}
+                className="nav-link"
+                to={`/products?category=${cat._id}`}
+                style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
+              >
+                {cat.name}
+              </Link>
             ))}
           </div>
           {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)}></div>}
@@ -205,14 +211,14 @@ export default function NavBar() {
               </button>
             </div>
             <div className="p-3">
-              <Link className="nav-link d-block" to="/products" onClick={() => setSidebarOpen(false)} style={{textTransform: 'uppercase', fontSize: '0.9rem'}}>SHOP</Link>
+              <Link className="nav-link d-block" to="/products" onClick={() => setSidebarOpen(false)} style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}>SHOP</Link>
               {categories.map(cat => (
                 <Link
                   key={cat._id}
                   className="nav-link d-block"
                   to={`/products?category=${cat._id}`}
                   onClick={() => setSidebarOpen(false)}
-                  style={{textTransform: 'uppercase', fontSize: '0.9rem'}}
+                  style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
                 >
                   {cat.name}
                 </Link>
@@ -221,6 +227,45 @@ export default function NavBar() {
           </div>
         </div>
       </nav>
+
+      {/* Cart Offcanvas */}
+      <div className={`offcanvas offcanvas-end ${cartOffcanvas ? 'show' : ''}`} style={{ visibility: cartOffcanvas ? 'visible' : 'hidden' }}>
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title">Your Cart</h5>
+          <button type="button" className="btn-close" onClick={() => setCartOffcanvas(false)}></button>
+        </div>
+        <div className="offcanvas-body">
+          {cart.length === 0 ? (
+            <p>Your cart is empty.</p>
+          ) : (
+            <>
+              {cart.map((item, index) => (
+                <div key={`${item.product || index}-${item.variationId || ''}`} className="d-flex mb-3 align-items-center">
+                  {(() => {
+                    const img = item.image || '/placeholder.png';
+                    const src = img.startsWith('http') ? img : (img.startsWith('/') ? (require('../utils/api').default.defaults.baseURL + img) : img);
+                    return <img src={src} style={{ width: 50, height: 50, objectFit: 'cover' }} alt="" className="me-3" />;
+                  })()}
+                  <div className="flex-grow-1">
+                    <Link to={`/products/${item.product}`} className="text-black text-decoration-none" onClick={() => setCartOffcanvas(false)}>
+                      <strong>{item.name}</strong>
+                    </Link>
+                    {item.size && <p className="mb-1 small text-muted">Size: {item.size}</p>}
+                    <p className="mb-0">{formatPrice(item.price)} x {item.qty}</p>
+                  </div>
+                </div>
+              ))}
+              <hr />
+              <div className="d-grid gap-2">
+                <Link to="/checkout" className="btn btn-dark" onClick={() => setCartOffcanvas(false)}>Checkout</Link>
+                <Link to="/cart" className="btn btn-secondary" onClick={() => setCartOffcanvas(false)}>View Details</Link>
+                <Link to="/products" className="btn btn-outline-secondary" onClick={() => setCartOffcanvas(false)}>Continue Shopping</Link>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {cartOffcanvas && <div className="offcanvas-backdrop show" onClick={() => setCartOffcanvas(false)}></div>}
     </>
   );
 }

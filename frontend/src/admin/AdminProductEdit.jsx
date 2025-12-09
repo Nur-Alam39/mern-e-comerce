@@ -115,12 +115,7 @@ export default function AdminProductEdit() {
 
     return (
         <div>
-            <div className="row">
-                <div className="col-md-3 mb-3">
-                    <AdminSidebar active="products" onChange={(s) => navigate(`/admin?section=${s}`)} />
-                </div>
-                <div className="col-md-9">
-                    <div className="mb-3">
+            <div className="mb-3">
                         <button className="btn btn-link p-0" onClick={() => navigate('/admin?section=products')} style={{ textDecoration: 'none' }}>
                             <i className="fa-solid fa-arrow-left me-2"></i>Back to Products
                         </button>
@@ -241,8 +236,6 @@ export default function AdminProductEdit() {
                             </form>
                         </div>
                     </div>
-                </div>
-            </div>
-    </div>
+        </div>
     );
 }
