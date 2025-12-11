@@ -28,6 +28,8 @@ export default function ProductList() {
   const searchQuery = searchParams.get('search') || '';
   const { addToCart } = useCart();
   const { formatPrice, productListPagination } = useSettings();
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     const p = Number(searchParams.get('page')) || 1;
@@ -37,18 +39,22 @@ export default function ProductList() {
     setMinPriceFilter(searchParams.get('minPrice') || '');
     setMaxPriceFilter(searchParams.get('maxPrice') || '');
     setInStockFilter(searchParams.get('inStock') === 'true');
+    setSelectedCategory(searchParams.get('category') || '');
 
     // Load wishlist from localStorage
     const saved = localStorage.getItem('wishlist');
     if (saved) setWishlist(JSON.parse(saved));
 
-    // load category name if category id is present in query
-    const catId = searchParams.get('category');
-    if (catId) {
-      setCategoryId(catId);
+    // load category name if category is present in query
+    const catParam = searchParams.get('category');
+    if (catParam) {
+      setCategoryId(catParam);
       (async () => {
         try {
-          const res = await axios.get(`/api/categories/${catId}`);
+          // Check if it's a valid ObjectId, if not, treat as slug
+          const isObjectId = /^[a-f\d]{24}$/i.test(catParam);
+          const endpoint = isObjectId ? `/api/categories/${catParam}` : `/api/categories/slug/${catParam}`;
+          const res = await axios.get(endpoint);
           setCategoryName(res.data && res.data.name ? res.data.name : '');
         } catch (e) {
           setCategoryName('');
@@ -58,15 +64,25 @@ export default function ProductList() {
       setCategoryId('');
       setCategoryName('');
     }
+
+    // Load categories for filter
+    (async () => {
+      try {
+        const res = await axios.get('/api/categories');
+        setCategories(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.log('Failed to load categories', err);
+      }
+    })();
   }, [searchParams]);
 
   // apply filters instantly when controls change (debounce price inputs)
   useEffect(() => {
-    const apply = () => applyFilters({ sort: sort || '', minPrice: minPriceFilter || '', maxPrice: maxPriceFilter || '', inStock: inStockFilter ? 'true' : '' });
+    const apply = () => applyFilters({ sort: sort || '', minPrice: minPriceFilter || '', maxPrice: maxPriceFilter || '', inStock: inStockFilter ? 'true' : '', category: selectedCategory || '' });
     // debounce price inputs to avoid too many requests while typing
     const timer = setTimeout(apply, 350);
     return () => clearTimeout(timer);
-  }, [sort, minPriceFilter, maxPriceFilter, inStockFilter]);
+  }, [sort, minPriceFilter, maxPriceFilter, inStockFilter, selectedCategory]);
 
   useEffect(() => {
     (async () => {
@@ -217,7 +233,21 @@ export default function ProductList() {
         </div>
       )}
       <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <select className="form-select form-select-sm" style={{ width: 220 }} value={sort} onChange={e => setSort(e.target.value)}>
+        <select className="form-select form-select-sm" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} style={{ width: 150 }}>
+          <option value="">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat._id} value={cat._id}>{cat.name}</option>
+          ))}
+        </select>
+        <input type="number" className="form-control form-control-sm" style={{ width: 100 }} value={minPriceFilter} onChange={e => setMinPriceFilter(e.target.value)} placeholder="Min $" />
+        <input type="number" className="form-control form-control-sm" style={{ width: 100 }} value={maxPriceFilter} onChange={e => setMaxPriceFilter(e.target.value)} placeholder="Max $" />
+        <div className="form-check mb-0">
+          <input className="form-check-input" type="checkbox" id="inStock" checked={inStockFilter} onChange={e => setInStockFilter(e.target.checked)} />
+          <label className="form-check-label" htmlFor="inStock">
+            In Stock
+          </label>
+        </div>
+        <select className="form-select form-select-sm" style={{ width: 150 }} value={sort} onChange={e => setSort(e.target.value)}>
           <option value="">Sort: Default</option>
           <option value="price_asc">Price: Low to High</option>
           <option value="price_desc">Price: High to Low</option>
@@ -226,16 +256,7 @@ export default function ProductList() {
           <option value="name_asc">Name A-Z</option>
           <option value="name_desc">Name Z-A</option>
         </select>
-
-        <input className="form-control form-control-sm" style={{ width: 100 }} placeholder="Min" value={minPriceFilter} onChange={e => setMinPriceFilter(e.target.value)} />
-        <input className="form-control form-control-sm" style={{ width: 100 }} placeholder="Max" value={maxPriceFilter} onChange={e => setMaxPriceFilter(e.target.value)} />
-
-        <div className="form-check form-check-inline">
-          <input id="inStock" className="form-check-input" type="checkbox" checked={inStockFilter} onChange={e => setInStockFilter(e.target.checked)} />
-          <label className="form-check-label" htmlFor="inStock">In stock</label>
-        </div>
-
-        <button className="btn btn-sm btn-outline-secondary" onClick={() => { setSort(''); setMinPriceFilter(''); setMaxPriceFilter(''); setInStockFilter(false); applyFilters({ sort: '', minPrice: '', maxPrice: '', inStock: '' }); }}>Clear</button>
+        <button className="btn btn-sm btn-outline-secondary" onClick={() => { setSort(''); setMinPriceFilter(''); setMaxPriceFilter(''); setInStockFilter(false); setSelectedCategory(''); applyFilters({ sort: '', minPrice: '', maxPrice: '', inStock: '', category: '' }); }}>Clear All</button>
       </div>
       {loading ? <p>Loading...</p> : (
         <>
@@ -248,6 +269,11 @@ export default function ProductList() {
               />
             ))}
           </div>
+          {products.length === 0 && categoryName && (
+            <div className="alert alert-info text-center">
+              No products found in category "{categoryName}".
+            </div>
+          )}
           {productListPagination === 'infinite' ? (
             loadingMore && <div className="text-center my-3"><div className="spinner-border spinner-border-sm" role="status"><span className="visually-hidden">Loading...</span></div></div>
           ) : (

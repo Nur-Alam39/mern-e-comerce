@@ -42,37 +42,46 @@ export default function AdminCategories() {
         <button className="btn btn-success" onClick={handleCreate}>Add Category</button>
       </div>
       {loading ? <p>Loading...</p> : (
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Parent</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map(c => (
-                <tr key={c._id}>
-                  <td><strong>{c.name}</strong></td>
-                  <td>
-                    {c.main ? (
-                      <span className="badge bg-success">Main</span>
-                    ) : (
-                      <span className="badge bg-secondary">Sub</span>
-                    )}
-                  </td>
-                  <td>{c.parent ? c.parent : '-'}</td>
-                  <td>
-                    <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(c)}>Edit</button>
-                    {/* <button className="btn btn-sm btn-danger" onClick={() => handleDelete(c)}>Delete</button> */}
-                  </td>
+        <>
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Slug</th>
+                  <th>Type</th>
+                  <th>Parent</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {categories.map(c => (
+                  <tr key={c._id}>
+                    <td><strong>{c.name}</strong></td>
+                    <td><code>{c.slug}</code></td>
+                    <td>
+                      {c.main ? (
+                        <span className="badge bg-success">Main</span>
+                      ) : (
+                        <span className="badge bg-secondary">Sub</span>
+                      )}
+                    </td>
+                    <td>{c.parent ? c.parent.name : '-'}</td>
+                    <td>
+                      <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(c)}>Edit</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(c)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {categories.length === 0 && (
+            <div className="alert alert-info text-center">
+              No categories found. <a href="#" onClick={handleCreate}>Create your first category</a>.
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -3,12 +3,21 @@ const Product = require('../models/Product');
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, stock, category, featured, newArrival, bestSelling, active, discountedPrice } = req.body;
+    const { name, description, price, purchasedPrice, stock, sku, unit, categories: categoriesRaw, featured, newArrival, bestSelling, active, discountedPrice } = req.body;
+    let categories = [];
+    try {
+      categories = JSON.parse(categoriesRaw);
+      if (!Array.isArray(categories)) categories = [categories];
+      categories = categories.map(id => new mongoose.Types.ObjectId(id));
+    } catch (e) {
+      categories = [];
+    }
     const images = [];
     if (req.files && req.files.length) {
       req.files.forEach(f => images.push('/uploads/' + f.filename));
     }
-    const product = new Product({ name, description, price, stock, category, featured, newArrival, bestSelling, active, discountedPrice, images });
+    const generatedSlug = generateSlug(name);
+    const product = new Product({ name, slug: generatedSlug, description, price, purchasedPrice, stock, sku, unit, categories, featured, newArrival, bestSelling, active, discountedPrice, images });
     await product.save();
     res.status(201).json(product);
   } catch (err) {
@@ -30,7 +39,18 @@ exports.getProducts = async (req, res) => {
       ];
     }
 
-    if (category) filter.category = category;
+    if (category) {
+      // Check if category is a valid ObjectId, if not, treat as slug
+      let categoryId;
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        categoryId = category;
+      } else {
+        // Find category by slug
+        const cat = await mongoose.model('Category').findOne({ slug: category });
+        if (cat) categoryId = cat._id;
+      }
+      if (categoryId) filter.categories = { $in: [categoryId] };
+    }
     // support query flags like ?featured=true
     if (typeof featured !== 'undefined') {
       if (featured === 'true' || featured === '1') filter.featured = true;
@@ -67,7 +87,7 @@ exports.getProducts = async (req, res) => {
     const total = await Product.countDocuments(filter);
     const pages = Math.ceil(total / limit) || 1;
     // build query and apply sort if provided
-    let query = Product.find(filter).populate('category');
+    let query = Product.find(filter).populate('categories');
 
     // support sort param (e.g. sort=price_asc, price_desc, newest, oldest, name_asc, name_desc)
     if (sort) {
@@ -97,7 +117,13 @@ exports.getProducts = async (req, res) => {
 
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('category');
+    let product;
+    // Check if param is a valid ObjectId, if not, treat as slug
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id).populate('categories');
+    } else {
+      product = await Product.findOne({ slug: req.params.id }).populate('categories');
+    }
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (err) {
@@ -108,14 +134,25 @@ exports.getProductById = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    let product;
+    // Check if param is a valid ObjectId, if not, treat as slug
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id);
+    } else {
+      product = await Product.findOne({ slug: req.params.id });
+    }
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    const { name, description, price, stock, category, featured, newArrival, bestSelling, active, discountedPrice, existingImages } = req.body;
+    const { name, description, price, purchasedPrice, stock, sku, unit, categories: categoriesRaw, featured, newArrival, bestSelling, active, discountedPrice, existingImages } = req.body;
+    const categories = Array.isArray(categoriesRaw) ? categoriesRaw : (categoriesRaw ? [categoriesRaw] : []);
     product.name = name || product.name;
+    if (name) product.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     product.description = description || product.description;
     product.price = price || product.price;
+    product.purchasedPrice = purchasedPrice !== undefined ? purchasedPrice : product.purchasedPrice;
     product.stock = stock || product.stock;
-    product.category = category || product.category;
+    product.sku = sku || product.sku;
+    product.unit = unit || product.unit;
+    product.categories = categories.length ? categories : product.categories;
     product.featured = featured !== undefined ? featured : product.featured;
     product.newArrival = newArrival !== undefined ? newArrival : product.newArrival;
     product.bestSelling = bestSelling !== undefined ? bestSelling : product.bestSelling;

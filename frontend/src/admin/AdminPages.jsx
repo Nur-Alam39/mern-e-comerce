@@ -61,43 +61,50 @@ export default function AdminPages() {
       </div>
 
       {loading ? <p>Loading...</p> : (
-        <div className="table-responsive">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Slug</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pages.map(p => (
-                <tr key={p._id} className={p.active ? '' : 'table-secondary'}>
-                  <td>{p.title}</td>
-                  <td>{p.slug}</td>
-                  <td>
-                    <span className={`badge ${p.active ? 'bg-success' : 'bg-secondary'}`}>
-                      {p.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td>{new Date(p.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(p)}>Edit</button>
-                    <button
-                      className={`btn btn-sm ${p.active ? 'btn-warning' : 'btn-success'} me-2`}
-                      onClick={() => handleToggleActive(p)}
-                    >
-                      {p.active ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p)}>Delete</button>
-                  </td>
+        <>
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Slug</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pages.map(p => (
+                  <tr key={p._id} className={p.active ? '' : 'table-secondary'}>
+                    <td>{p.title}</td>
+                    <td>{p.slug}</td>
+                    <td>
+                      <span className={`badge ${p.active ? 'bg-success' : 'bg-secondary'}`}>
+                        {p.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td>{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(p)}>Edit</button>
+                      <button
+                        className={`btn btn-sm ${p.active ? 'btn-warning' : 'btn-success'} me-2`}
+                        onClick={() => handleToggleActive(p)}
+                      >
+                        {p.active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {pages.length === 0 && (
+            <div className="alert alert-info text-center">
+              No pages found. <a href="#" onClick={() => navigate('/admin/pages/create')}>Add your first page</a>.
+            </div>
+          )}
+        </>
       )}
     </div>
   );

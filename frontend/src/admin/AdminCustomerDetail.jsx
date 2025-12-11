@@ -10,10 +10,17 @@ export default function AdminCustomerDetail() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    // const [currentPage, setCurrentPage] = useState(1);
+    // const [pageSize] = useState(10); // Orders per page
+
+    // // Pagination calculations
+    // const totalPages = Math.ceil(orders.length / pageSize);
+    // const paginatedOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     useEffect(() => {
         loadCustomer();
     }, [id]);
+
 
     const loadCustomer = async () => {
         try {
@@ -156,72 +163,72 @@ export default function AdminCustomerDetail() {
 
             {/* Order Details Modal */}
             {showModal && selectedOrder && (
-                <>
-                    <div className="modal-backdrop show"></div>
-                    <div className="modal show d-block" tabIndex="-1" role="dialog">
-                        <div className="modal-dialog modal-lg modal-dialog-scrollable">
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">Order Details - #{selectedOrder._id.slice(0, 12)}</h5>
-                                    <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-                                </div>
-                                <div className="modal-body">
-                                    <div className="row mb-3">
-                                        <div className="col-md-6">
-                                            <p><strong>Order Date:</strong> {formatDate(selectedOrder.createdAt)}</p>
-                                            <p><strong>Status:</strong> <span className={`badge ${getStatusBadge(selectedOrder.status)}`}>{selectedOrder.status}</span></p>
-                                        </div>
-                                        <div className="col-md-6">
-                                            <p><strong>Total Price:</strong> ${selectedOrder.totalPrice}</p>
-                                            <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod}</p>
-                                        </div>
+                <div className="modal-backdrop show"></div>
+            )}
+            {showModal && selectedOrder && (
+                <div className="modal show d-block" tabIndex="-1" role="dialog">
+                    <div className="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Order Details - {selectedOrder._id.slice(0, 12)}</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="row mb-3">
+                                    <div className="col-md-6">
+                                        <p><strong>Order Date:</strong> {formatDate(selectedOrder.createdAt)}</p>
+                                        <p><strong>Status:</strong> <span className={`badge ${getStatusBadge(selectedOrder.status)}`}>{selectedOrder.status}</span></p>
                                     </div>
+                                    <div className="col-md-6">
+                                        <p><strong>Total Price:</strong> ${selectedOrder.totalPrice}</p>
+                                        <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod}</p>
+                                    </div>
+                                </div>
 
-                                    <h6>Order Items</h6>
-                                    <div className="table-responsive mb-3">
-                                        <table className="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Product</th>
-                                                    <th>Quantity</th>
-                                                    <th>Price</th>
-                                                    <th>Subtotal</th>
+                                <h6>Order Items</h6>
+                                <div className="table-responsive mb-3">
+                                    <table className="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedOrder.items && selectedOrder.items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td>{item.name || 'Unknown Product'}</td>
+                                                    <td>{item.qty}</td>
+                                                    <td>${item.price}</td>
+                                                    <td>${(item.qty * item.price).toFixed(2)}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                {selectedOrder.items && selectedOrder.items.map((item, idx) => (
-                                                    <tr key={idx}>
-                                                        <td>{item.name || 'Unknown Product'}</td>
-                                                        <td>{item.qty}</td>
-                                                        <td>${item.price}</td>
-                                                        <td>${(item.qty * item.price).toFixed(2)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                                    {selectedOrder.shippingInfo && (
-                                        <div>
-                                            <h6>Shipping Address</h6>
-                                            <p>
-                                                <strong>{selectedOrder.shippingInfo.name}</strong><br />
-                                                {selectedOrder.shippingInfo.address}<br />
-                                                {selectedOrder.shippingInfo.city}, {selectedOrder.shippingInfo.postalCode}<br />
-                                                {selectedOrder.shippingInfo.country}<br />
-                                                Phone: {selectedOrder.shippingInfo.phone}<br />
-                                                Email: {selectedOrder.shippingInfo.email}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
-                                </div>
+                                {selectedOrder.shippingInfo && (
+                                    <div>
+                                        <h6>Shipping Address</h6>
+                                        <p>
+                                            <strong>{selectedOrder.shippingInfo.name}</strong><br />
+                                            {selectedOrder.shippingInfo.address}<br />
+                                            {selectedOrder.shippingInfo.city}, {selectedOrder.shippingInfo.postalCode}<br />
+                                            {selectedOrder.shippingInfo.country}<br />
+                                            Phone: {selectedOrder.shippingInfo.phone}<br />
+                                            Email: {selectedOrder.shippingInfo.email}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
                             </div>
                         </div>
                     </div>
-                </>
+                </div>
             )}
 
         </div>

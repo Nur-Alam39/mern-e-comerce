@@ -7,12 +7,45 @@ exports.getSettings = async (req, res) => {
             settings = new Settings({
                 currency: 'USD',
                 paymentMethods: [
-                    { name: 'bkash', enabled: true },
-                    { name: 'nagad', enabled: false },
-                    { name: 'ssl_commerce', enabled: false }
+                    { name: 'bkash', enabled: true, logo: 'https://via.placeholder.com/40x40?text=BKASH' },
+                    { name: 'nagad', enabled: false, logo: 'https://via.placeholder.com/40x40?text=NAGAD' },
+                    { name: 'ssl_commerce', enabled: false, logo: 'https://via.placeholder.com/40x40?text=SSL' }
+                ],
+                courierProviders: [
+                    { name: 'steadfast', enabled: false },
+                    { name: 'pathao', enabled: false }
                 ]
             });
             await settings.save();
+        } else {
+            // Ensure defaults are present
+            let updated = false;
+            if (!settings.paymentMethods || settings.paymentMethods.length === 0) {
+                settings.paymentMethods = [
+                    { name: 'bkash', enabled: true, logo: 'https://via.placeholder.com/40x40?text=BKASH' },
+                    { name: 'nagad', enabled: false, logo: 'https://via.placeholder.com/40x40?text=NAGAD' },
+                    { name: 'ssl_commerce', enabled: false, logo: 'https://via.placeholder.com/40x40?text=SSL' }
+                ];
+                updated = true;
+            } else {
+                // Ensure logos are set
+                settings.paymentMethods.forEach(method => {
+                    if (!method.logo) {
+                        method.logo = 'https://via.placeholder.com/40x40?text=' + method.name.toUpperCase();
+                        updated = true;
+                    }
+                });
+            }
+            if (!settings.courierProviders || settings.courierProviders.length === 0) {
+                settings.courierProviders = [
+                    { name: 'steadfast', enabled: false },
+                    { name: 'pathao', enabled: false }
+                ];
+                updated = true;
+            }
+            if (updated) {
+                await settings.save();
+            }
         }
         res.json(settings);
     } catch (err) {
@@ -112,30 +145,32 @@ exports.updatePaymentMethod = async (req, res) => {
 };
 
 exports.updateCourierProvider = async (req, res) => {
-  try {
-    const { name } = req.params;
-    const { enabled, config } = req.body;
+    try {
+        const { name } = req.params;
+        const { enabled, config } = req.body;
 
-    console.log('Updating courier provider:', name, { enabled, config });
+        console.log('Updating courier provider:', name, { enabled, config });
 
-    let settings = await Settings.findOne();
-    if (!settings) settings = new Settings();
+        let settings = await Settings.findOne();
+        if (!settings) settings = new Settings();
 
-    const cp = settings.courierProviders.find(c => c.name === name);
-    if (cp) {
-      if (enabled !== undefined) cp.enabled = enabled;
-      if (config) cp.config = config;
-    } else {
-      settings.courierProviders.push({ name, enabled: !!enabled, config: config || {} });
+        const cp = settings.courierProviders.find(c => c.name === name);
+        if (cp) {
+            if (enabled !== undefined) cp.enabled = enabled;
+            if (config) cp.config = config;
+            if (req.file) cp.logo = '/uploads/' + req.file.filename;
+        } else {
+            const logo = req.file ? '/uploads/' + req.file.filename : '';
+            settings.courierProviders.push({ name, enabled: !!enabled, config: config || {}, logo });
+        }
+
+        await settings.save();
+
+        console.log('Saved courier provider config:', settings.courierProviders.find(c => c.name === name));
+
+        res.json(settings);
+    } catch (err) {
+        console.error('Error updating courier provider:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-
-    await settings.save();
-
-    console.log('Saved courier provider config:', settings.courierProviders.find(c => c.name === name));
-
-    res.json(settings);
-  } catch (err) {
-    console.error('Error updating courier provider:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
 };

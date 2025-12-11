@@ -20,7 +20,7 @@ const ProductCard = forwardRef(({ product, showWishlist = true, showAddToCart = 
     const baseURL = require('../utils/api').default.defaults.baseURL;
     const src = img.startsWith('http') ? img : (baseURL + (img.startsWith('/') ? img : '/' + img));
     addToCart({
-      product: product._id,
+      product: product.slug,
       name: product.name,
       price: product.discountedPrice > 0 ? product.discountedPrice : product.price,
       qty: 1,
@@ -30,9 +30,9 @@ const ProductCard = forwardRef(({ product, showWishlist = true, showAddToCart = 
 
   const toggleWishlist = (e) => {
     e.preventDefault();
-    const updated = wishlist.includes(product._id)
-      ? wishlist.filter(id => id !== product._id)
-      : [...wishlist, product._id];
+    const updated = wishlist.includes(product.slug)
+      ? wishlist.filter(slug => slug !== product.slug)
+      : [...wishlist, product.slug];
     setWishlist(updated);
     localStorage.setItem('wishlist', JSON.stringify(updated));
   };
@@ -45,7 +45,7 @@ const ProductCard = forwardRef(({ product, showWishlist = true, showAddToCart = 
     <div ref={ref} className={className}>
       <div className="card h-100 product-card">
         <div className="card-img-wrapper">
-          <Link to={`/products/${product._id}`} className="card-img-link">
+          <Link to={`/products/${product.slug}`} className="card-img-link">
             <img src={src} className="card-img-top" alt={product.name} />
           </Link>
           {showWishlist && (
@@ -59,7 +59,7 @@ const ProductCard = forwardRef(({ product, showWishlist = true, showAddToCart = 
           )}
         </div>
         <div className="card-body">
-          <Link to={`/products/${product._id}`} className="card-title-link">
+          <Link to={`/products/${product.slug}`} className="card-title-link">
             <h6 className="card-title">{product.name}</h6>
           </Link>
           <p className="card-text">

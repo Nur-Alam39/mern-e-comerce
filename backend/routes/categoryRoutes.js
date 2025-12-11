@@ -5,6 +5,7 @@ const upload = require('../middleware/upload');
 const { protect, admin } = require('../middleware/auth');
 
 router.get('/', catCtrl.getCategories);
+router.get('/slug/:slug', catCtrl.getCategoryBySlug);
 router.post('/', protect, admin, upload.single('image'), catCtrl.createCategory);
 router.put('/:id', protect, admin, upload.single('image'), catCtrl.updateCategory);
 router.delete('/:id', protect, admin, catCtrl.deleteCategory);

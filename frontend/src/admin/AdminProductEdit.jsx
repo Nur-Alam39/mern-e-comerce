@@ -4,13 +4,15 @@ import axios from '../utils/api';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import AdminSidebar from './AdminSidebar';
+import { useSettings } from '../hooks/useSettings';
 
 export default function AdminProductEdit() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { formatPrice } = useSettings();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ name: '', description: '', price: 0, stock: 0, category: '', featured: false, newArrival: false, bestSelling: false, active: true, discountedPrice: 0 });
+    const [form, setForm] = useState({ name: '', slug: '', description: '', price: 0, stock: 0, sku: '', unit: 'pcs', category: '', featured: false, newArrival: false, bestSelling: false, active: true, discountedPrice: 0 });
     const [files, setFiles] = useState([]);
     const [existingImages, setExistingImages] = useState([]); // server-side image URLs
     const [filePreviews, setFilePreviews] = useState([]); // object URLs for newly added files
@@ -30,8 +32,11 @@ export default function AdminProductEdit() {
                 name: p.name || '',
                 description: p.description || '',
                 price: p.price || 0,
+                purchasedPrice: p.purchasedPrice || 0,
                 stock: p.stock || 0,
-                category: p.category ? (p.category._id || p.category) : '',
+                sku: p.sku || '',
+                unit: p.unit || 'pcs',
+                categories: Array.isArray(p.categories) ? p.categories.map(c => c._id || c) : [],
                 featured: !!p.featured,
                 newArrival: !!p.newArrival,
                 bestSelling: !!p.bestSelling,
@@ -89,10 +94,13 @@ export default function AdminProductEdit() {
         try {
             const fd = new FormData();
             fd.append('name', form.name);
+            fd.append('slug', form.slug || '');
             fd.append('description', form.description);
             fd.append('price', String(form.price));
             fd.append('stock', String(form.stock));
-            if (form.category) fd.append('category', form.category);
+            fd.append('sku', form.sku);
+            fd.append('unit', form.unit);
+            fd.append('categories', JSON.stringify([form.category]));
             fd.append('featured', String(form.featured));
             fd.append('newArrival', String(form.newArrival));
             fd.append('bestSelling', String(form.bestSelling));
@@ -116,126 +124,147 @@ export default function AdminProductEdit() {
     return (
         <div>
             <div className="mb-3">
-                        <button className="btn btn-link p-0" onClick={() => navigate('/admin?section=products')} style={{ textDecoration: 'none' }}>
-                            <i className="fa-solid fa-arrow-left me-2"></i>Back to Products
-                        </button>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h3>{id ? 'Edit Product' : 'Create Product'}</h3>
-                        {id && (
-                            <span className={`badge ${form.active ? 'bg-success' : 'bg-danger'}`}>
-                                {form.active ? 'Active' : 'Inactive'}
-                            </span>
-                        )}
-                    </div>
+                <button className="btn btn-link p-0" onClick={() => navigate('/admin?section=products')} style={{ textDecoration: 'none' }}>
+                    <i className="fa-solid fa-arrow-left me-2"></i>Back to Products
+                </button>
+            </div>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h3>{id ? 'Edit Product' : 'Create Product'}</h3>
+                {id && (
+                    <span className={`badge ${form.active ? 'bg-success' : 'bg-danger'}`}>
+                        {form.active ? 'Active' : 'Inactive'}
+                    </span>
+                )}
+            </div>
 
-                    <div className="card">
-                        <div className="card-body">
-                            <form onSubmit={handleSubmit}>
-                                <div className="row">
-                                    <div className="col-md-6">
-                                        <div className="mb-2">
-                                            <label className="form-label">Name</label>
-                                            <input className="form-control" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="form-label">Description</label>
-                                            <ReactQuill ref={quillRef} theme="snow" value={form.description} onChange={value => setForm({ ...form, description: value })} />
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="form-label">Category</label>
-                                            <select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                                                <option value="">-- None --</option>
-                                                {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                                            </select>
-                                        </div>
+            <div className="card">
+                <div className="card-body">
+                    <form onSubmit={handleSubmit}>
+                        <div className="row">
+                            <div className="col-md-6">
+                                <div className="mb-2">
+                                    <label className="form-label">Name</label>
+                                    <input className="form-control" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">Slug</label>
+                                    <input className="form-control" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} placeholder="auto-generated from name" />
+                                    <small className="text-muted">Used in URLs. Auto-generated from name.</small>
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">Description</label>
+                                    <ReactQuill ref={quillRef} theme="snow" value={form.description} onChange={value => setForm({ ...form, description: value })} />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">Category</label>
+                                    <select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                                        <option value="">Select a category</option>
+                                        {categories.map(c => (
+                                            <option key={c._id} value={c._id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                                        {variations.length > 0 && (
-                                            <div className="mt-4">
-                                                <b>Variations ({ variations.length })</b>
-                                                <ul className="list-group">
-                                                    {variations.map((v, idx) => (
-                                                        <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
-                                                            <span>Size: {v.size}, Stock: {v.stock}, Price: ${v.price}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {id && (
-                                            <button type="button" className="btn btn-info my-2" onClick={() => navigate(`/admin/products/${id}/variations`)}>Manage Variations</button>
-                                        )}
+                                {variations.length > 0 && (
+                                    <div className="mt-4">
+                                        <b>Variations ({variations.length})</b>
+                                        <ul className="list-group">
+                                            {variations.map((v, idx) => (
+                                                <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Size: {v.size}, Stock: {v.stock}, Price: {formatPrice(v.price)}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <div className="col-md-6">
-                                        <div className="mb-2">
-                                            <label className="form-label">Price</label>
-                                            <input type="number" step="0.01" className="form-control" value={form.price} onChange={e => setForm({ ...form, price: parseFloat(e.target.value) })} required />
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="form-label">Stock</label>
-                                            <input type="number" className="form-control" value={form.stock} onChange={e => setForm({ ...form, stock: parseInt(e.target.value) || 0 })} />
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="form-label">Images</label>
-                                            <input ref={fileInputRef} style={{ display: 'none' }} type="file" multiple className="form-control" onChange={handleFileChange} />
-                                            <div className="d-flex flex-wrap gap-2">
-                                                {/* existing server images */}
-                                                {existingImages.map((img, idx) => (
-                                                    <div key={`ex-${idx}`} className="position-relative" style={{ width: 96, height: 96, border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden' }}>
-                                                        <img alt={`img-${idx}`} src={img && img.startsWith('http') ? img : (axios.defaults.baseURL + img)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                        <div className="position-absolute" style={{ right: 6, top: 6, color: '#fff', cursor: 'pointer' }} title="Edit image">
-                                                            <i className="fa-solid fa-pencil" onClick={triggerFileInput}></i>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {/* newly selected file previews */}
-                                                {filePreviews.map((p, i) => (
-                                                    <div key={`new-${i}`} className="position-relative" style={{ width: 96, height: 96, border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden' }}>
-                                                        <img alt={`new-${i}`} src={p} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                        <div className="position-absolute" style={{ right: 6, top: 6, color: '#fff' }}>
-                                                            <i className="fa-solid fa-pencil"></i>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {/* add box */}
-                                                <div onClick={triggerFileInput} className="d-flex align-items-center justify-content-center" style={{ width: 96, height: 96, border: '1px dashed #bbb', borderRadius: 6, cursor: 'pointer' }} title="Add images">
-                                                    <div className="text-center">
-                                                        <div style={{ fontSize: 20 }}><i className="fa-solid fa-plus"></i></div>
-                                                        <div className="small">Add</div>
-                                                    </div>
+                                )}
+                                {id && (
+                                    <button type="button" className="btn btn-info my-2" onClick={() => navigate(`/admin/products/${id}/variations`)}>Manage Variations</button>
+                                )}
+                            </div>
+                            <div className="col-md-6">
+                                <div className="mb-2">
+                                    <label className="form-label">Price</label>
+                                    <input type="number" step="0.01" className="form-control" value={form.price} onChange={e => setForm({ ...form, price: parseFloat(e.target.value) })} required />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">Stock</label>
+                                    <input type="number" className="form-control" value={form.stock} onChange={e => setForm({ ...form, stock: parseInt(e.target.value) || 0 })} />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">SKU</label>
+                                    <input className="form-control" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="Product SKU" />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">Unit</label>
+                                    <select className="form-select" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>
+                                        <option value="pcs">Pieces (pcs)</option>
+                                        <option value="kg">Kilograms (kg)</option>
+                                        <option value="lbs">Pounds (lbs)</option>
+                                        <option value="liters">Liters</option>
+                                        <option value="meters">Meters</option>
+                                    </select>
+                                </div>
+                                <div className="mb-2">
+                                    <label className="form-label">Images</label>
+                                    <input ref={fileInputRef} style={{ display: 'none' }} type="file" multiple className="form-control" onChange={handleFileChange} />
+                                    <div className="d-flex flex-wrap gap-2">
+                                        {/* existing server images */}
+                                        {existingImages.map((img, idx) => (
+                                            <div key={`ex-${idx}`} className="position-relative" style={{ width: 96, height: 96, border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden' }}>
+                                                <img alt={`img-${idx}`} src={img && img.startsWith('http') ? img : (axios.defaults.baseURL + img)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <div className="position-absolute" style={{ right: 6, top: 6, color: '#fff', cursor: 'pointer' }} title="Edit image">
+                                                    <i className="fa-solid fa-pencil" onClick={triggerFileInput}></i>
                                                 </div>
                                             </div>
-                                            <div className="small mt-1">Selected: {files.map(f => f.name).join(', ')}</div>
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="form-label">Discounted Price</label>
-                                            <input type="number" step="0.01" className="form-control" value={form.discountedPrice} onChange={e => setForm({ ...form, discountedPrice: parseFloat(e.target.value) || 0 })} />
-                                        </div>
-                                        <div className="mb-2 form-check">
-                                            <input id="active" className="form-check-input" type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} />
-                                            <label className="form-check-label" htmlFor="active">Active</label>
-                                        </div>
-                                        <div className="mb-2 form-check">
-                                            <input id="featured" className="form-check-input" type="checkbox" checked={form.featured} onChange={e => setForm({ ...form, featured: e.target.checked })} />
-                                            <label className="form-check-label" htmlFor="featured">Featured</label>
-                                        </div>
-                                        <div className="mb-2 form-check">
-                                            <input id="newArrival" className="form-check-input" type="checkbox" checked={form.newArrival} onChange={e => setForm({ ...form, newArrival: e.target.checked })} />
-                                            <label className="form-check-label" htmlFor="newArrival">New Arrival</label>
-                                        </div>
-                                        <div className="mb-2 form-check">
-                                            <input id="bestSelling" className="form-check-input" type="checkbox" checked={form.bestSelling} onChange={e => setForm({ ...form, bestSelling: e.target.checked })} />
-                                            <label className="form-check-label" htmlFor="bestSelling">Best Selling</label>
+                                        ))}
+                                        {/* newly selected file previews */}
+                                        {filePreviews.map((p, i) => (
+                                            <div key={`new-${i}`} className="position-relative" style={{ width: 96, height: 96, border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden' }}>
+                                                <img alt={`new-${i}`} src={p} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <div className="position-absolute" style={{ right: 6, top: 6, color: '#fff' }}>
+                                                    <i className="fa-solid fa-pencil"></i>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {/* add box */}
+                                        <div onClick={triggerFileInput} className="d-flex align-items-center justify-content-center" style={{ width: 96, height: 96, border: '1px dashed #bbb', borderRadius: 6, cursor: 'pointer' }} title="Add images">
+                                            <div className="text-center">
+                                                <div style={{ fontSize: 20 }}><i className="fa-solid fa-plus"></i></div>
+                                                <div className="small">Add</div>
+                                            </div>
                                         </div>
                                     </div>
+                                    <div className="small mt-1">Selected: {files.map(f => f.name).join(', ')}</div>
                                 </div>
-                                <div className="mt-3 text-right">
-                                    <button className="btn btn-primary" type="submit">Save</button>
-                                    <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/admin?section=products')}>Cancel</button>
+                                <div className="mb-2">
+                                    <label className="form-label">Discounted Price</label>
+                                    <input type="number" step="0.01" className="form-control" value={form.discountedPrice} onChange={e => setForm({ ...form, discountedPrice: parseFloat(e.target.value) || 0 })} />
                                 </div>
-                            </form>
+                                <div className="mb-2 form-check">
+                                    <input id="active" className="form-check-input" type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} />
+                                    <label className="form-check-label" htmlFor="active">Active</label>
+                                </div>
+                                <div className="mb-2 form-check">
+                                    <input id="featured" className="form-check-input" type="checkbox" checked={form.featured} onChange={e => setForm({ ...form, featured: e.target.checked })} />
+                                    <label className="form-check-label" htmlFor="featured">Featured</label>
+                                </div>
+                                <div className="mb-2 form-check">
+                                    <input id="newArrival" className="form-check-input" type="checkbox" checked={form.newArrival} onChange={e => setForm({ ...form, newArrival: e.target.checked })} />
+                                    <label className="form-check-label" htmlFor="newArrival">New Arrival</label>
+                                </div>
+                                <div className="mb-2 form-check">
+                                    <input id="bestSelling" className="form-check-input" type="checkbox" checked={form.bestSelling} onChange={e => setForm({ ...form, bestSelling: e.target.checked })} />
+                                    <label className="form-check-label" htmlFor="bestSelling">Best Selling</label>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        <div className="mt-3 text-right">
+                            <button className="btn btn-primary" type="submit">Save</button>
+                            <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/admin?section=products')}>Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     );
 }

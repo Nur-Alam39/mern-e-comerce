@@ -67,7 +67,7 @@ export default function App() {
 
             <Route path="/" element={<div className=""><Home /></div>} />
             <Route path="/products" element={<div className="container mt-4"><ProductList /></div>} />
-            <Route path="/products/:id" element={<div className="container mt-4"><ProductDetail /></div>} />
+            <Route path="/products/:slug" element={<div className="container mt-4"><ProductDetail /></div>} />
             <Route path="/cart" element={<div className="container mt-4"><Cart /></div>} />
             <Route path="/checkout" element={<div className="container mt-4"><Checkout /></div>} />
 

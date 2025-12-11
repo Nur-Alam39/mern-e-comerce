@@ -15,10 +15,12 @@ export default function NavBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState({});
   const [showCategoriesMenu, setShowCategoriesMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSearchForm, setShowSearchForm] = useState(false);
   const [cartOffcanvas, setCartOffcanvas] = useState(false);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -38,7 +40,21 @@ export default function NavBar() {
     const fetchCategories = async () => {
       try {
         const res = await axios.get('/api/categories?showInNavbar=true');
-        setCategories(Array.isArray(res.data) ? res.data : []);
+        const cats = Array.isArray(res.data) ? res.data : [];
+        setCategories(cats);
+
+        // Fetch subcategories for each category
+        const subs = {};
+        for (const cat of cats) {
+          try {
+            const subRes = await axios.get(`/api/categories?parent=${cat._id}`);
+            subs[cat._id] = Array.isArray(subRes.data) ? subRes.data : [];
+          } catch (err) {
+            console.log('Failed to fetch subcategories for', cat.name, err);
+            subs[cat._id] = [];
+          }
+        }
+        setSubcategories(subs);
       } catch (err) {
         console.log(err);
       }
@@ -191,16 +207,49 @@ export default function NavBar() {
           {/* Lower part: Categories */}
           <div className="container d-none d-lg-flex justify-content-center align-items-center gap-3 px-3 pt-2 flex-nowrap navbar-categories">
             <Link className="nav-link" to="/products" style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}>SHOP</Link>
-            {categories.map(cat => (
-              <Link
-                key={cat._id}
-                className="nav-link"
-                to={`/products?category=${cat._id}`}
-                style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
-              >
-                {cat.name}
-              </Link>
-            ))}
+            {categories.map(cat => {
+              const subs = subcategories[cat._id] || [];
+              if (subs.length > 0) {
+                return (
+                  <div
+                    key={cat._id}
+                    className="dropdown position-relative"
+                    onMouseEnter={() => setHoveredCategory(cat._id)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  >
+                    <Link
+                      className="nav-link"
+                      to={`/products?category=${cat.slug}`}
+                      style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
+                    >
+                      {cat.name} <i className="fa fa-chevron-down ms-1" style={{ fontSize: '0.7rem' }}></i>
+                    </Link>
+                    {hoveredCategory === cat._id && (
+                      <div className="dropdown-menu show position-absolute" style={{ top: '100%', left: 0, minWidth: '200px' }}>
+                        <Link className="dropdown-item" to={`/products?category=${cat.slug}`}>All {cat.name}</Link>
+                        <div className="dropdown-divider"></div>
+                        {subs.map(sub => (
+                          <Link key={sub._id} className="dropdown-item" to={`/products?category=${sub.slug}`}>
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                return (
+                  <Link
+                    key={cat._id}
+                    className="nav-link"
+                    to={`/products?category=${cat.slug}`}
+                    style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
+                  >
+                    {cat.name}
+                  </Link>
+                );
+              }
+            })}
           </div>
           {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)}></div>}
           <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
@@ -212,17 +261,32 @@ export default function NavBar() {
             </div>
             <div className="p-3">
               <Link className="nav-link d-block" to="/products" onClick={() => setSidebarOpen(false)} style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}>SHOP</Link>
-              {categories.map(cat => (
-                <Link
-                  key={cat._id}
-                  className="nav-link d-block"
-                  to={`/products?category=${cat._id}`}
-                  onClick={() => setSidebarOpen(false)}
-                  style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
-                >
-                  {cat.name}
-                </Link>
-              ))}
+              {categories.map(cat => {
+                const subs = subcategories[cat._id] || [];
+                return (
+                  <div key={cat._id}>
+                    <Link
+                      className="nav-link d-block"
+                      to={`/products?category=${cat.slug}`}
+                      onClick={() => setSidebarOpen(false)}
+                      style={{ textTransform: 'uppercase', fontSize: '0.9rem' }}
+                    >
+                      {cat.name}
+                    </Link>
+                    {subs.map(sub => (
+                      <Link
+                        key={sub._id}
+                        className="nav-link d-block ms-3"
+                        to={`/products?category=${sub.slug}`}
+                        onClick={() => setSidebarOpen(false)}
+                        style={{ fontSize: '0.8rem' }}
+                      >
+                        {sub.name}
+                      </Link>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -16,6 +16,7 @@ const settingsSchema = new mongoose.Schema({
         {
             name: { type: String },
             enabled: { type: Boolean, default: false },
+            logo: { type: String, default: '' },
             config: mongoose.Schema.Types.Mixed
         }
     ],

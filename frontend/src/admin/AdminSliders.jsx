@@ -41,29 +41,36 @@ export default function AdminSliders() {
                         <button className="btn btn-success" onClick={handleCreate}>Add Slider</button>
                     </div>
                     {loading ? <p>Loading...</p> : (
-                        <div className="table-responsive">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Title</th>
-                                        <th>Subtitle</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sliders.map(s => (
-                                        <tr key={s._id}>
-                                            <td><strong>{s.title || '(no title)'}</strong></td>
-                                            <td>{s.subtitle || ''}</td>
-                                            <td>
-                                                <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(s)}>Edit</button>
-                                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s)}>Delete</button>
-                                            </td>
+                        <>
+                            <div className="table-responsive">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Subtitle</th>
+                                            <th>Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {sliders.map(s => (
+                                            <tr key={s._id}>
+                                                <td><strong>{s.title || '(no title)'}</strong></td>
+                                                <td>{s.subtitle || ''}</td>
+                                                <td>
+                                                    <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(s)}>Edit</button>
+                                                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s)}>Delete</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {sliders.length === 0 && (
+                                <div className="alert alert-info text-center">
+                                    No sliders found. <a href="#" onClick={handleCreate}>Add your first slider</a>.
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

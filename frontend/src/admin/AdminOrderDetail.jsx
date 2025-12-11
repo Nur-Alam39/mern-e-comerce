@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import axios from '../utils/api';
+import { useSettings } from '../hooks/useSettings';
 
 export default function AdminOrderDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { formatPrice } = useSettings();
     const [order, setOrder] = useState(null);
     const [products, setProducts] = useState({});
     const [shipments, setShipments] = useState([]);
@@ -16,6 +18,16 @@ export default function AdminOrderDetail() {
     const [newStatus, setNewStatus] = useState('');
     const [expandedShipments, setExpandedShipments] = useState(new Set());
     const [showPaymentResponse, setShowPaymentResponse] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [newQty, setNewQty] = useState('');
+    const [showAddItem, setShowAddItem] = useState(false);
+    const [availableProducts, setAvailableProducts] = useState([]);
+    const [productVariations, setProductVariations] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState('');
+    const [selectedVariation, setSelectedVariation] = useState('');
+    const [addQty, setAddQty] = useState(1);
+    const [editingAddress, setEditingAddress] = useState(false);
+    const [addressForm, setAddressForm] = useState({});
 
     useEffect(() => {
         loadOrder();
@@ -110,6 +122,97 @@ export default function AdminOrderDetail() {
         setExpandedShipments(newExpanded);
     };
 
+    // Load available products for adding items
+    const loadAvailableProducts = async () => {
+        try {
+            const res = await axios.get('/api/products');
+            setAvailableProducts(res.data.products || []);
+        } catch (err) {
+            console.log('Failed to load products', err);
+        }
+    };
+
+    // Load variations for selected product
+    const loadProductVariations = async (productId) => {
+        try {
+            const res = await axios.get(`/api/product-variations?product=${productId}`);
+            return res.data || [];
+        } catch (err) {
+            console.log('Failed to load variations', err);
+            return [];
+        }
+    };
+
+    // Handle quantity update
+    const handleUpdateQuantity = async (itemIndex) => {
+        if (!newQty || newQty <= 0) return alert('Please enter a valid quantity');
+        try {
+            await axios.put(`/api/orders/${order._id}/items`, { itemIndex, newQty: parseInt(newQty) });
+            setOrder({ ...order, totalPrice: order.items.reduce((sum, item, idx) => idx === itemIndex ? sum + (item.price * parseInt(newQty)) : sum + (item.price * item.qty), 0) });
+            setEditingItem(null);
+            setNewQty('');
+            alert('Quantity updated successfully');
+            loadOrder(); // Reload to get updated data
+        } catch (err) {
+            console.log('Failed to update quantity', err);
+            alert('Failed to update quantity: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // Handle item removal
+    const handleRemoveItem = async (itemIndex) => {
+        if (!confirm('Are you sure you want to remove this item?')) return;
+        try {
+            await axios.delete(`/api/orders/${order._id}/items`, { data: { itemIndex } });
+            alert('Item removed successfully');
+            loadOrder(); // Reload to get updated data
+        } catch (err) {
+            console.log('Failed to remove item', err);
+            alert('Failed to remove item: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // Handle add item
+    const handleAddItem = async () => {
+        if (!selectedProduct) return alert('Please select a product');
+        if (!addQty || addQty <= 0) return alert('Please enter a valid quantity');
+
+        try {
+            const product = availableProducts.find(p => p._id === selectedProduct);
+            if (!product) return alert('Product not found');
+
+            await axios.post(`/api/orders/${order._id}/items`, {
+                productId: selectedProduct,
+                variationId: selectedVariation || undefined,
+                qty: parseInt(addQty),
+                price: product.discountedPrice || product.price
+            });
+
+            alert('Item added successfully');
+            setShowAddItem(false);
+            setSelectedProduct('');
+            setSelectedVariation('');
+            setAddQty(1);
+            loadOrder(); // Reload to get updated data
+        } catch (err) {
+            console.log('Failed to add item', err);
+            alert('Failed to add item: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // Handle address update
+    const handleUpdateAddress = async () => {
+        try {
+            await axios.put(`/api/orders/${order._id}/address`, { shippingInfo: addressForm });
+            setOrder({ ...order, shippingInfo: addressForm });
+            setEditingAddress(false);
+            alert('Address updated successfully');
+        } catch (err) {
+            console.log('Failed to update address', err);
+            alert('Failed to update address: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
     if (loading) {
         return <div className="container py-4"><p>Loading...</p></div>;
     }
@@ -195,7 +298,18 @@ export default function AdminOrderDetail() {
 
                             {/* Order Items */}
                             <div className="mb-4">
-                                <h5>Order Items</h5>
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <h5>Order Items</h5>
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => {
+                                            setShowAddItem(true);
+                                            loadAvailableProducts();
+                                        }}
+                                    >
+                                        + Add Item
+                                    </button>
+                                </div>
                                 <div className="table-responsive">
                                     <table className="table table-hover">
                                         <thead>
@@ -204,7 +318,7 @@ export default function AdminOrderDetail() {
                                                 <th>Quantity</th>
                                                 <th>Price</th>
                                                 <th>Stock</th>
-                                                <th>Action</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -214,8 +328,38 @@ export default function AdminOrderDetail() {
                                                 return (
                                                     <tr key={idx}>
                                                         <td>{item.name || 'Unknown Product'}</td>
-                                                        <td>{item.qty}</td>
-                                                        <td>${item.price}</td>
+                                                        <td>
+                                                            {editingItem === idx ? (
+                                                                <div className="d-flex align-items-center gap-2">
+                                                                    <input
+                                                                        type="number"
+                                                                        className="form-control form-control-sm"
+                                                                        style={{ width: '80px' }}
+                                                                        value={newQty}
+                                                                        onChange={(e) => setNewQty(e.target.value)}
+                                                                        min="1"
+                                                                    />
+                                                                    <button
+                                                                        className="btn btn-success btn-sm"
+                                                                        onClick={() => handleUpdateQuantity(idx)}
+                                                                    >
+                                                                        ✓
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        onClick={() => {
+                                                                            setEditingItem(null);
+                                                                            setNewQty('');
+                                                                        }}
+                                                                    >
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span>{item.qty}</span>
+                                                            )}
+                                                        </td>
+                                                        <td>{formatPrice(item.price)}</td>
                                                         <td>
                                                             {product ? (
                                                                 <span className={product.stock && product.stock > 0 ? 'badge bg-success' : 'badge bg-danger'}>
@@ -226,9 +370,30 @@ export default function AdminOrderDetail() {
                                                             )}
                                                         </td>
                                                         <td>
-                                                            {productId && (
-                                                                <Link to={`admin/products/edit/${productId}`} className="btn btn-sm btn-primary">View</Link>
-                                                            )}
+                                                            <div className="btn-group btn-group-sm">
+                                                                <button
+                                                                    className="btn btn-outline-primary"
+                                                                    onClick={() => {
+                                                                        setEditingItem(idx);
+                                                                        setNewQty(item.qty);
+                                                                    }}
+                                                                    title="Edit Quantity"
+                                                                >
+                                                                    ✏️
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-outline-danger"
+                                                                    onClick={() => handleRemoveItem(idx)}
+                                                                    title="Remove Item"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                                {productId && (
+                                                                    <Link to={`/admin/products/edit/${productId}`} className="btn btn-outline-info" title="View Product">
+                                                                        👁️
+                                                                    </Link>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );
@@ -236,6 +401,81 @@ export default function AdminOrderDetail() {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {/* Add Item Form */}
+                                {showAddItem && (
+                                    <div className="mt-3 p-3 border rounded bg-light">
+                                        <h6>Add New Item</h6>
+                                        <div className="row g-3">
+                                            <div className="col-md-4">
+                                                <label className="form-label">Product</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={selectedProduct}
+                                                    onChange={async (e) => {
+                                                        setSelectedProduct(e.target.value);
+                                                        setSelectedVariation('');
+                                                        if (e.target.value) {
+                                                            const variations = await loadProductVariations(e.target.value);
+                                                            setProductVariations(variations);
+                                                        } else {
+                                                            setProductVariations([]);
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="">Select Product</option>
+                                                    {availableProducts.map(p => (
+                                                        <option key={p._id} value={p._id}>{p.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label">Quantity</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control"
+                                                    value={addQty}
+                                                    onChange={(e) => setAddQty(e.target.value)}
+                                                    min="1"
+                                                />
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label">Variation (Optional)</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={selectedVariation}
+                                                    onChange={(e) => setSelectedVariation(e.target.value)}
+                                                    disabled={!selectedProduct}
+                                                >
+                                                    <option value="">No variation</option>
+                                                    {productVariations.map(v => (
+                                                        <option key={v._id} value={v._id}>{v.size}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-md-2 d-flex align-items-end">
+                                                <button
+                                                    className="btn btn-success me-2"
+                                                    onClick={handleAddItem}
+                                                >
+                                                    Add
+                                                </button>
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    onClick={() => {
+                                                        setShowAddItem(false);
+                                                        setSelectedProduct('');
+                                                        setSelectedVariation('');
+                                                        setProductVariations([]);
+                                                        setAddQty(1);
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Order Summary */}
@@ -243,7 +483,7 @@ export default function AdminOrderDetail() {
                                 <h5>Order Summary</h5>
                                 <div className="row">
                                     <div className="col-md-6">
-                                        <p><strong>Total Price:</strong> <span style={{ fontSize: '1.2rem', color: '#28a745' }}>${order.totalPrice}</span></p>
+                                        <p><strong>Total Price:</strong> <span style={{ fontSize: '1.2rem', color: '#28a745' }}>{formatPrice(order.totalPrice)}</span></p>
                                         <p><strong>Payment Method:</strong> {order.paymentMethod}</p>
                                     </div>
                                 </div>
@@ -275,15 +515,111 @@ export default function AdminOrderDetail() {
                             {/* Shipping Address */}
                             {order.shippingInfo && (
                                 <div className="mb-4">
-                                    <h5>Shipping Address</h5>
-                                    <p>
-                                        <strong>{order.shippingInfo.name}</strong><br />
-                                        {order.shippingInfo.address}<br />
-                                        {order.shippingInfo.city}, {order.shippingInfo.postalCode}<br />
-                                        {order.shippingInfo.country}<br />
-                                        Phone: {order.shippingInfo.phone}<br />
-                                        Email: {order.shippingInfo.email}
-                                    </p>
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <h5>Shipping Address</h5>
+                                        <button
+                                            className="btn btn-outline-primary btn-sm"
+                                            onClick={() => {
+                                                setEditingAddress(true);
+                                                setAddressForm({ ...order.shippingInfo });
+                                            }}
+                                        >
+                                            ✏️ Edit Address
+                                        </button>
+                                    </div>
+
+                                    {editingAddress ? (
+                                        <div className="p-3 border rounded bg-light">
+                                            <div className="row g-3">
+                                                <div className="col-md-6">
+                                                    <label className="form-label">Name *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={addressForm.name || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <label className="form-label">Phone *</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={addressForm.phone || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-12">
+                                                    <label className="form-label">Address *</label>
+                                                    <textarea
+                                                        className="form-control"
+                                                        rows="2"
+                                                        value={addressForm.address || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, address: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label">City</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={addressForm.city || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label">Postal Code</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={addressForm.postalCode || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-md-4">
+                                                    <label className="form-label">Country</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={addressForm.country || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-12">
+                                                    <label className="form-label">Email</label>
+                                                    <input
+                                                        type="email"
+                                                        className="form-control"
+                                                        value={addressForm.email || ''}
+                                                        onChange={(e) => setAddressForm({ ...addressForm, email: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="col-12">
+                                                    <button
+                                                        className="btn btn-success me-2"
+                                                        onClick={handleUpdateAddress}
+                                                    >
+                                                        Update Address
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        onClick={() => setEditingAddress(false)}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p>
+                                            <strong>{order.shippingInfo.name}</strong><br />
+                                            {order.shippingInfo.address}<br />
+                                            {order.shippingInfo.city}, {order.shippingInfo.postalCode}<br />
+                                            {order.shippingInfo.country}<br />
+                                            Phone: {order.shippingInfo.phone}<br />
+                                            Email: {order.shippingInfo.email}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 

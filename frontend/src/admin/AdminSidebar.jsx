@@ -31,6 +31,7 @@ const AdminSidebar = forwardRef(function AdminSidebar({ active, onChange, isOpen
     }));
   };
 
+
   return (
     <div ref={ref} className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
       <ul className="admin-sidebar__nav">

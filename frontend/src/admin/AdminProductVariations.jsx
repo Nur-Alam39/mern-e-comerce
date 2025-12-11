@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../utils/api';
 import AdminSidebar from './AdminSidebar';
+import { useSettings } from '../hooks/useSettings';
 
 export default function AdminProductVariations() {
     const { productId } = useParams();
     const navigate = useNavigate();
+    const { formatPrice } = useSettings();
     const [variations, setVariations] = useState([]);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -90,7 +92,7 @@ export default function AdminProductVariations() {
             <div className="row">
                 <div className="col-md-12">
                     <button className="btn btn-light mb-3" onClick={() => navigate(`/admin/products/edit/${product._id}`)}>
-                      <i className='fa fa-chevron-left'></i> &nbsp; Back to Product
+                        <i className='fa fa-chevron-left'></i> &nbsp; Back to Product
                     </button>
 
                     <h3 className="mb-4">Variations for: {product.name}</h3>
@@ -169,7 +171,7 @@ export default function AdminProductVariations() {
                                                         <tr key={v._id}>
                                                             <td><strong>{v.size}</strong></td>
                                                             <td>{v.stock}</td>
-                                                            <td>${v.price}</td>
+                                                            <td>{formatPrice(v.price)}</td>
                                                             <td>
                                                                 <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(v)}>Edit</button>
                                                                 <button className="btn btn-sm btn-danger" onClick={() => handleDelete(v._id)}>Delete</button>

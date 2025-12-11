@@ -215,12 +215,12 @@ class SteadfastAdapter extends BaseAdapter {
     super(opts);
     this.apiKey = opts.apiKey;
     this.secretKey = opts.secretKey;
-    this.baseUrl = opts.baseUrl || 'https://portal.packzy.com/api/v1';
+    this.baseUrl = opts.baseUrl || 'https://portal.steadfast.com.bd/api/v1';
 
     // Try alternative URLs if the primary one fails
     this.alternativeUrls = [
-      'https://portal.packzy.com/api/v1',
       'https://portal.steadfast.com.bd/api/v1',
+      'https://portal.packzy.com/api/v1',
       'https://api.steadfast.com.bd/v1'
     ];
     console.log('SteadfastAdapter initialized with baseUrl:', this.baseUrl);
@@ -250,53 +250,58 @@ class SteadfastAdapter extends BaseAdapter {
       alternative_phone: shippingInfo.alternative_phone || '',
     };
 
-    try {
-      console.log('Steadfast API call:', {
-        url: `${this.baseUrl}/create_order`,
-        headers: {
-          'Api-Key': this.apiKey ? '***' + this.apiKey.slice(-4) : 'MISSING',
-          'Secret-Key': this.secretKey ? '***' + this.secretKey.slice(-4) : 'MISSING',
-          'Content-Type': 'application/json',
-        },
-        payload: payload
-      });
+    // Try different URLs if the primary one fails
+    for (const url of this.alternativeUrls) {
+      try {
+        console.log('Trying Steadfast API call with URL:', url);
+        console.log('Payload:', payload);
 
-      const response = await axios.post(`${this.baseUrl}/create_order`, payload, {
-        headers: {
-          'Api-Key': this.apiKey,
-          'Secret-Key': this.secretKey,
-          'Content-Type': 'application/json',
-        },
-      });
+        const response = await axios.post(`${url}/create_order`, payload, {
+          headers: {
+            'Api-Key': this.apiKey,
+            'Secret-Key': this.secretKey,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000, // 10 second timeout
+        });
 
-      console.log('Steadfast API response:', response.data);
+        console.log('Steadfast API response:', response.data);
 
-      const data = response.data;
-      console.log('Steadfast API response data:', data);
+        const data = response.data;
+        console.log('Steadfast API response data:', data);
 
-      if (data.status !== 200) {
-        throw new Error(data.message || 'Failed to create order');
+        // Check for success - handle different response formats
+        if (data.status === 200 || data.status === 'success' || data.status === true ||
+            (data.status === undefined && data.consignment_id) ||
+            (data.consignment && data.consignment.consignment_id)) {
+
+          // Handle different response structures
+          const consignment = data.consignment || data.data || data;
+          if (!consignment && !data.consignment_id) {
+            throw new Error('Invalid response format from Steadfast API');
+          }
+
+          return {
+            provider: 'steadfast',
+            providerShipmentId: consignment.consignment_id || consignment.id || consignment.consignmentId || data.consignment_id,
+            trackingCode: consignment.tracking_code || consignment.trackingCode || data.tracking_code,
+            invoice: consignment.invoice || data.invoice,
+            status: consignment.status || data.status || 'created',
+            rate: shippingInfo.cod_amount || 0,
+            currency: 'BDT',
+            metadata: consignment || data,
+          };
+        } else {
+          throw new Error(data.message || data.error || 'Failed to create order');
+        }
+      } catch (error) {
+        console.error(`Steadfast API call failed for ${url}:`, (error.response && error.response.data) || error.message);
+        // Continue to next URL if this one failed
+        if (url === this.alternativeUrls[this.alternativeUrls.length - 1]) {
+          // This was the last URL, throw the error
+          throw new Error(`Steadfast API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
+        }
       }
-
-      // Handle different response structures
-      const consignment = data.consignment || data;
-      if (!consignment) {
-        throw new Error('Invalid response format from Steadfast API');
-      }
-
-      return {
-        provider: 'steadfast',
-        providerShipmentId: consignment.consignment_id || consignment.id,
-        trackingCode: consignment.tracking_code,
-        invoice: consignment.invoice,
-        status: consignment.status || 'created',
-        rate: shippingInfo.cod_amount || 0,
-        currency: 'BDT',
-        metadata: consignment,
-      };
-    } catch (error) {
-      console.error('Steadfast create order error:', (error.response && error.response.data) || error.message);
-      throw new Error(`Steadfast API error: ${(error.response && error.response.data && error.response.data.message) || error.message}`);
     }
   }
 

@@ -92,6 +92,18 @@ export default function AdminProducts() {
     }
   };
 
+  const handleDelete = async (p) => {
+    if (!window.confirm(`Delete product "${p.name}"? This action cannot be undone.`)) return;
+    try {
+      await axios.delete(`/api/products/${p._id}`);
+      await fetchProducts();
+    } catch (err) {
+      console.log('Failed to delete product', err);
+      const errorMessage = err.response?.data?.message || 'Delete failed';
+      alert(errorMessage);
+    }
+  };
+
   // Products are now filtered on backend
 
   return (
@@ -170,8 +182,10 @@ export default function AdminProducts() {
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>SKU</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Unit</th>
                   <th>Variations</th>
                   <th>Category</th>
                   <th>Status</th>
@@ -182,8 +196,10 @@ export default function AdminProducts() {
                 {products.map(p => (
                   <tr key={p._id} className={p.active ? '' : 'table-secondary'}>
                     <td>{p.name}</td>
+                    <td>{p.sku || '-'}</td>
                     <td>{formatPrice(p.price)}</td>
                     <td>{p.stock}</td>
+                    <td>{p.unit || 'pcs'}</td>
                     <td>
                       {variationCounts[p._id] > 0 ? (
                         <span className="badge bg-info">{variationCounts[p._id]}</span>
@@ -212,6 +228,12 @@ export default function AdminProducts() {
               </tbody>
             </table>
           </div>
+
+          {products.length === 0 && (
+            <div className="alert alert-info text-center">
+              No products found. <a href="#" onClick={() => navigate('/admin/products/create')}>Add your first product</a>.
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

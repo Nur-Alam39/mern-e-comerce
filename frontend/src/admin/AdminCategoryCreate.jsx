@@ -5,7 +5,7 @@ import axios from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminCategoryCreate() {
-  const [form, setForm] = useState({ name: '', parent: '', main: false, showInNavbar: false });
+  const [form, setForm] = useState({ name: '', slug: '', parent: '', main: false, showInNavbar: false });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState(null);
@@ -25,7 +25,7 @@ export default function AdminCategoryCreate() {
           // find category by id
           const found = (Array.isArray(r.data) ? r.data : []).find(c => c._id === id);
           if (found) {
-            setForm(prev => ({ ...prev, name: found.name || '', parent: found.parent || '', main: !!found.main, showInNavbar: !!found.showInNavbar }));
+            setForm(prev => ({ ...prev, name: found.name || '', slug: found.slug || '', parent: found.parent || '', main: !!found.main, showInNavbar: !!found.showInNavbar }));
             if (found.image) setImagePreview(`${axios.defaults.baseURL}${found.image}`);
           }
         }
@@ -43,6 +43,12 @@ export default function AdminCategoryCreate() {
       }
     };
   }, [imagePreview]);
+
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    setForm({ ...form, name, slug });
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -62,6 +68,7 @@ export default function AdminCategoryCreate() {
     try {
       const data = new FormData();
       data.append('name', form.name);
+      data.append('slug', form.slug);
       data.append('parent', form.parent || '');
       data.append('main', form.main ? 'true' : 'false');
       data.append('showInNavbar', form.showInNavbar ? 'true' : 'false');
@@ -77,42 +84,56 @@ export default function AdminCategoryCreate() {
     <div>
       <div className="row">
         <div className="col-md-9">
+          <div className="mb-3">
+            <button className="btn btn-link p-0" onClick={() => navigate('/admin?section=categories')} style={{ textDecoration: 'none' }}>
+              <i className="fa-solid fa-arrow-left me-2"></i>Back to Categories
+            </button>
+          </div>
           <h3>{id ? 'Edit Category' : 'Create Category'}</h3>
           {loading ? <p>Loading...</p> : (
-            <form onSubmit={submit} style={{ maxWidth: 600 }} encType="multipart/form-data">
-              <div className="mb-3">
-                <label className="form-label">Name</label>
-                <input className="form-control" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Parent Category (optional)</label>
-                <select className="form-select" value={form.parent || ''} onChange={e => setForm({ ...form, parent: e.target.value })}>
-                  <option value="">-- None --</option>
-                  {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Image (optional)</label>
-                <input type="file" accept="image/*" className="form-control" onChange={handleImageChange} />
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img src={imagePreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'cover' }} />
+            <div className="card">
+              <div className="card-body">
+                <form onSubmit={submit} style={{ maxWidth: 600 }} encType="multipart/form-data">
+                  <div className="mb-3">
+                    <label className="form-label">Name</label>
+                    <input className="form-control" value={form.name} onChange={handleNameChange} required />
                   </div>
-                )}
+                  <div className="mb-3">
+                    <label className="form-label">Slug</label>
+                    <input className="form-control" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} placeholder="auto-generated if empty" />
+                    <small className="text-muted">Used in URLs. Auto-generated from name if empty.</small>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Parent Category (optional)</label>
+                    <select className="form-select" value={form.parent || ''} onChange={e => setForm({ ...form, parent: e.target.value })}>
+                      <option value="">-- None --</option>
+                      {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Image (optional)</label>
+                    <input type="file" accept="image/*" className="form-control" onChange={handleImageChange} />
+                    {imagePreview && (
+                      <div className="mt-2">
+                        <img src={imagePreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'cover' }} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="mb-3 form-check">
+                    <input className="form-check-input" type="checkbox" id="mainCheck" checked={form.main} onChange={e => setForm({ ...form, main: e.target.checked })} />
+                    <label className="form-check-label" htmlFor="mainCheck">Mark as main category</label>
+                  </div>
+                  <div className="mb-3 form-check">
+                    <input className="form-check-input" type="checkbox" id="navbarCheck" checked={form.showInNavbar} onChange={e => setForm({ ...form, showInNavbar: e.target.checked })} />
+                    <label className="form-check-label" htmlFor="navbarCheck">Show in navbar</label>
+                  </div>
+                  <div>
+                    <button className="btn btn-primary" type="submit">Save</button>
+                    <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/admin?section=categories')}>Cancel</button>
+                  </div>
+                </form>
               </div>
-              <div className="mb-3 form-check">
-                <input className="form-check-input" type="checkbox" id="mainCheck" checked={form.main} onChange={e => setForm({ ...form, main: e.target.checked })} />
-                <label className="form-check-label" htmlFor="mainCheck">Mark as main category</label>
-              </div>
-              <div className="mb-3 form-check">
-                <input className="form-check-input" type="checkbox" id="navbarCheck" checked={form.showInNavbar} onChange={e => setForm({ ...form, showInNavbar: e.target.checked })} />
-                <label className="form-check-label" htmlFor="navbarCheck">Show in navbar</label>
-              </div>
-              <div>
-                <button className="btn btn-primary" type="submit">Save</button>
-                <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/admin?section=categories')}>Cancel</button>
-              </div>
-            </form>
+            </div>
           )}
         </div>
       </div>

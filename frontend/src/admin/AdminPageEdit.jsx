@@ -83,6 +83,11 @@ export default function AdminPageEdit() {
         <div>
             <div className="row">
                 <div className="col-md-12">
+                    <div className="mb-3">
+                        <button className="btn btn-link p-0" onClick={() => navigate('/admin?section=pages')} style={{ textDecoration: 'none' }}>
+                            <i className="fa-solid fa-arrow-left me-2"></i>Back to Pages
+                        </button>
+                    </div>
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h3>{id ? 'Edit Page' : 'Create Page'}</h3>
                     </div>

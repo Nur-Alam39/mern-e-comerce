@@ -68,7 +68,7 @@ export default function RecentlyViewed({ currentId, limit = 10 }) {
         let ids = [];
         try { ids = raw ? JSON.parse(raw) : []; } catch (e) { ids = []; }
         // Exclude current product
-        ids = ids.filter(i => String(i) !== String(currentId));
+        ids = ids.filter(i => String(i) !== String(currentSlug));
         if (ids.length === 0) return setItems([]);
         const take = ids.slice(0, limit);
         const proms = take.map(id => axios.get(`/api/products/${id}`).then(r => r.data).catch(() => null));
@@ -80,24 +80,24 @@ export default function RecentlyViewed({ currentId, limit = 10 }) {
       }
     };
     load();
-  }, [currentId, limit]);
+  }, [currentSlug, limit]);
 
 
   if (!items || items.length === 0) return null;
 
   return (
-      <section className="py-5">
-        <h3 className="mb-3 mt-5 fw-bold">Recently Viewed</h3>
-        <div className={items.length < 4 ? "few-items" : ""}>
-          <Slider {...settings}>
-            {items.map(p => (
-                <div key={p._id} className="px-2">
-                  <ProductCard product={p} className=""/>
-                </div>
-            ))}
-          </Slider>
-        </div>
-        {toast && <Toast message={toast} onClose={() => setToast(null)}/>}
-      </section>
-);
+    <section className="py-5">
+      <h3 className="mb-3 mt-5 fw-bold">Recently Viewed</h3>
+      <div className={items.length < 4 ? "few-items" : ""}>
+        <Slider {...settings}>
+          {items.map(p => (
+            <div key={p._id} className="px-2">
+              <ProductCard product={p} className="" />
+            </div>
+          ))}
+        </Slider>
+      </div>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+    </section>
+  );
 }

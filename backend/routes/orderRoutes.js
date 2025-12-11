@@ -12,5 +12,9 @@ router.get('/', protect, admin, orderCtrl.getOrders);
 router.get('/myorders', protect, orderCtrl.getMyOrders);
 router.get('/:id', optionalAuth, orderCtrl.getOrderById);
 router.put('/:id/status', protect, admin, orderCtrl.updateOrderStatus);
+router.post('/:id/items', protect, admin, orderCtrl.addItemToOrder);
+router.delete('/:id/items', protect, admin, orderCtrl.removeItemFromOrder);
+router.put('/:id/items', protect, admin, orderCtrl.updateItemQuantity);
+router.put('/:id/address', protect, admin, orderCtrl.updateOrderAddress);
 
 module.exports = router;

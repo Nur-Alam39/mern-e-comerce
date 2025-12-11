@@ -76,7 +76,7 @@ export default function RelatedProducts({ categoryId, currentId, limit = 10 }) {
       }
     };
     load();
-  }, [categoryId, currentId, limit]);
+  }, [categoryId, currentSlug, limit]);
 
   if (!items || items.length === 0) return null;
 

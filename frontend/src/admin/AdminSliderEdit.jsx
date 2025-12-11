@@ -47,38 +47,47 @@ export default function AdminSliderEdit() {
     <div className=''>
       <div className="row">
         <div className="col-md-12">
+          <div className="mb-3">
+            <button className="btn btn-link p-0" onClick={() => navigate('/admin/sliders')} style={{ textDecoration: 'none' }}>
+              <i className="fa-solid fa-arrow-left me-2"></i>Back to Sliders
+            </button>
+          </div>
           <h3>{id ? 'Edit Slider' : 'Create Slider'}</h3>
           {loading ? <p>Loading...</p> : (
-            <form onSubmit={submit} style={{ maxWidth: 700 }}>
-              <div className="mb-3">
-                <label className="form-label">Title</label>
-                <input className="form-control" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+            <div className="card">
+              <div className="card-body">
+                <form onSubmit={submit} style={{ maxWidth: 700 }}>
+                  <div className="mb-3">
+                    <label className="form-label">Title</label>
+                    <input className="form-control" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Subtitle</label>
+                    <input className="form-control" value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">CTA Text</label>
+                    <input className="form-control" value={form.ctaText} onChange={e => setForm({ ...form, ctaText: e.target.value })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">CTA Link</label>
+                    <input className="form-control" value={form.ctaLink} onChange={e => setForm({ ...form, ctaLink: e.target.value })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Order</label>
+                    <input type="number" className="form-control" value={form.order} onChange={e => setForm({ ...form, order: Number(e.target.value) })} />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Image</label>
+                    <input type="file" accept="image/*" className="form-control" onChange={e => setFile(e.target.files[0])} />
+                  </div>
+                  <div>
+                    <button className="btn btn-primary" type="submit">Save</button>
+                    <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/admin/sliders')}>Cancel</button>
+                  </div>
+                </form>
               </div>
-              <div className="mb-3">
-                <label className="form-label">Subtitle</label>
-                <input className="form-control" value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">CTA Text</label>
-                <input className="form-control" value={form.ctaText} onChange={e => setForm({ ...form, ctaText: e.target.value })} />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">CTA Link</label>
-                <input className="form-control" value={form.ctaLink} onChange={e => setForm({ ...form, ctaLink: e.target.value })} />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Order</label>
-                <input type="number" className="form-control" value={form.order} onChange={e => setForm({ ...form, order: Number(e.target.value) })} />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Image</label>
-                <input type="file" accept="image/*" className="form-control" onChange={e => setFile(e.target.files[0])} />
-              </div>
-              <div>
-                <button className="btn btn-primary" type="submit">Save</button>
-                <button type="button" className="btn btn-secondary ms-2" onClick={() => navigate('/admin/sliders')}>Cancel</button>
-              </div>
-            </form>
+            </div>
           )}
         </div>
       </div>

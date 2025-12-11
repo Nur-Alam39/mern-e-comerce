@@ -45,7 +45,7 @@ export const useSettings = () => {
     }, []);
 
     const getCurrencySymbol = () => {
-        return CURRENCY_SYMBOLS[settings?.currency] || '$';
+        return (settings && settings.currency && CURRENCY_SYMBOLS[settings.currency]) || '$';
     };
 
     const formatPrice = (price) => {
@@ -56,18 +56,18 @@ export const useSettings = () => {
         settings,
         loading,
         error,
-        brandName: settings?.brandName || 'MERN Shop',
-        primaryColor: settings?.primaryColor || '#007bff',
-        secondaryColor: settings?.secondaryColor || '#6c757d',
-        currency: settings?.currency || 'USD',
+        brandName: (settings && settings.brandName) || 'MERN Shop',
+        primaryColor: (settings && settings.primaryColor) || '#007bff',
+        secondaryColor: (settings && settings.secondaryColor) || '#6c757d',
+        currency: (settings && settings.currency) || 'USD',
         currencySymbol: getCurrencySymbol(),
         formatPrice,
-        socialLinks: settings?.socialLinks || [],
-        facebookPixelId: settings?.facebookPixelId || '',
-        productListPagination: settings?.productListPagination || 'numbered',
-        address: settings?.address || '',
-        whatsapp: settings?.whatsapp || '',
-        brandLogo: settings?.brandLogo || '',
-        paymentMethods: settings?.paymentMethods || []
+        socialLinks: (settings && settings.socialLinks) || [],
+        facebookPixelId: (settings && settings.facebookPixelId) || '',
+        productListPagination: (settings && settings.productListPagination) || 'numbered',
+        address: (settings && settings.address) || '',
+        whatsapp: (settings && settings.whatsapp) || '',
+        brandLogo: (settings && settings.brandLogo) || '',
+        paymentMethods: (settings && settings.paymentMethods) || []
     };
 };

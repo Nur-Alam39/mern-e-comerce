@@ -3,6 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import axios from '../utils/api';
 
 export default function AdminCouriers() {
+  // Helper function to get full image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${axios.defaults.baseURL}${imagePath}`;
+  };
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState([]);
@@ -64,15 +71,12 @@ export default function AdminCouriers() {
 
   if (loading) return <p>Loading...</p>;
 
-  const getProviderLogo = (name) => {
-    switch (name) {
-      case 'steadfast':
-        return 'https://portal.packzy.com/images/steadfast-logo.png';
-      case 'pathao':
-        return 'https://pathao.com/wp-content/themes/pathao/images/pathao-logo.png';
-      default:
-        return 'https://via.placeholder.com/40x40?text=' + name.charAt(0).toUpperCase();
+  const getProviderLogo = (provider) => {
+    if (provider.logo) {
+      return getImageUrl(provider.logo);
     }
+    // Fallback to placeholder
+    return 'https://via.placeholder.com/40x40?text=' + provider.name.charAt(0).toUpperCase();
   };
 
   const isConfigured = (provider) => {
@@ -221,6 +225,38 @@ export default function AdminCouriers() {
                   </div>
                 </div>
               )}
+
+              <div className="mb-3">
+                <label className="form-label">Logo</label>
+                <input
+                  type="file"
+                  className="form-control"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const formData = new FormData();
+                      formData.append('logo', file);
+                      // Upload immediately
+                      fetch(`/api/settings/couriers/${selectedProvider.name}`, {
+                        method: 'PUT',
+                        body: formData,
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                      }).then(() => {
+                        load(); // Reload to show new logo
+                      }).catch(err => console.error('Upload failed', err));
+                    }
+                  }}
+                />
+                {selectedProvider.logo && (
+                  <div className="mt-2">
+                    <small className="text-muted">Current Logo:</small><br />
+                    <img src={getImageUrl(selectedProvider.logo)} alt={`${selectedProvider.name} logo`} style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -334,7 +370,7 @@ export default function AdminCouriers() {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={getProviderLogo(provider.name)}
+                            src={getProviderLogo(provider)}
                             alt={provider.name}
                             className="me-3"
                             style={{ width: '40px', height: '40px', objectFit: 'contain' }}

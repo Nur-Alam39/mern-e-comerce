@@ -102,9 +102,12 @@ export default function AdminPayments() {
     return method.config && method.config.apiKey && method.config.secretKey;
   };
 
-  const getMethodLogo = (name) => {
-    // You can add specific logos for payment methods here
-    return 'https://via.placeholder.com/40x40?text=' + name.charAt(0).toUpperCase();
+  const getMethodLogo = (method) => {
+    if (method.logo) {
+      return getImageUrl(method.logo);
+    }
+    // Fallback to placeholder
+    return 'https://via.placeholder.com/40x40?text=' + method.name.charAt(0).toUpperCase();
   };
 
   if (loading) return <p>Loading...</p>;
@@ -335,7 +338,7 @@ export default function AdminPayments() {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={getMethodLogo(method.name)}
+                            src={getMethodLogo(method)}
                             alt={method.name}
                             className="me-3"
                             style={{ width: '40px', height: '40px', objectFit: 'contain' }}
