@@ -79,9 +79,12 @@ const create = async (req, res) => {
     });
     await ship.save();
 
-    // Optionally update order status
+    // Optionally update order status and shipment info
     if (order) {
       order.status = 'Shipped';
+      order.shipmentId = ship.providerShipmentId;
+      order.shipmentName = provider;
+      order.shipmentStatus = ship.status;
       await order.save();
     }
 
@@ -161,7 +164,7 @@ const bulkCreate = async (req, res) => {
       if (result.status !== 'error' && result.status !== 'processing') {
         let trackingUrl = '';
         if (provider === 'steadfast' && result.tracking_code) {
-          trackingUrl = `https://portal.packzy.com/track/${result.tracking_code}`;
+          trackingUrl = `https://portal.steadfast.com.bd/track/${result.tracking_code}`;
         }
         // Pathao doesn't provide immediate tracking URLs for bulk orders
 
@@ -179,9 +182,14 @@ const bulkCreate = async (req, res) => {
         await ship.save();
         shipments.push(ship);
 
-        // Update order status if applicable
+        // Update order status and shipment info if applicable
         if (mapping && mapping.orderId) {
-          await Order.findByIdAndUpdate(mapping.orderId, { status: 'Shipped' });
+          await Order.findByIdAndUpdate(mapping.orderId, {
+            status: 'Shipped',
+            shipmentId: ship.providerShipmentId,
+            shipmentName: provider,
+            shipmentStatus: ship.status
+          });
         }
       } else if (result.status === 'processing') {
         // For async processing (like Pathao bulk), create shipment with processing status
@@ -272,6 +280,12 @@ const webhook = async (req, res) => {
     ship.status = status || ship.status;
     ship.metadata = Object.assign({}, ship.metadata || {}, { webhook: data || req.body });
     await ship.save();
+
+    // Update order shipment status if shipment has an order
+    if (ship.order) {
+      await Order.findByIdAndUpdate(ship.order, { shipmentStatus: ship.status });
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('Webhook error', err);

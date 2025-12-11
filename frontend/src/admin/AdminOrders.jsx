@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../utils/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSettings } from '../hooks/useSettings';
 
 export default function AdminOrders() {
@@ -10,26 +10,33 @@ export default function AdminOrders() {
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [providers, setProviders] = useState([]);
   const navigate = useNavigate();
   const { formatPrice } = useSettings();
 
   useEffect(() => {
-    loadOrders();
+    loadOrders(1, '', '');
     loadProviders();
   }, []);
 
-  const loadOrders = async () => {
+  const loadOrders = async (page = 1, search = '', status = '') => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/orders');
-      // Sort by newest first (descending by createdAt)
-      const sortedOrders = (Array.isArray(res.data) ? res.data : []).sort((a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      setOrders(sortedOrders);
-      setCurrentPage(1);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: itemsPerPage.toString(),
+        ...(search && { search }),
+        ...(status && { status })
+      });
+      const res = await axios.get(`/api/orders?${params}`);
+      const { orders: fetchedOrders, page: currentPage, pages, total } = res.data;
+      setOrders(fetchedOrders || []);
+      setCurrentPage(currentPage || 1);
+      setTotalPages(pages || 1);
+      setTotalOrders(total || 0);
     } catch (err) {
       console.log('Failed to load orders', err && err.message ? err.message : err);
     } finally {
@@ -58,7 +65,7 @@ export default function AdminOrders() {
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedOrders(paginatedOrders.map(o => o._id));
+      setSelectedOrders(orders.map(o => o._id));
     } else {
       setSelectedOrders([]);
     }
@@ -79,7 +86,7 @@ export default function AdminOrders() {
         await axios.put(`/api/orders/${orderId}/status`, { status: newStatus });
       }
       alert('Status updated for selected orders');
-      loadOrders();
+      loadOrders(currentPage, searchTerm, filterStatus);
       setSelectedOrders([]);
     } catch (err) {
       console.log('Failed to update orders', err);
@@ -94,6 +101,7 @@ export default function AdminOrders() {
         await axios.post('/api/couriers/create', { provider, orderId });
       }
       alert('Shipments created for selected orders');
+      loadOrders(currentPage, searchTerm, filterStatus);
       setSelectedOrders([]);
     } catch (err) {
       console.log('Failed to create shipments', err);
@@ -113,24 +121,7 @@ export default function AdminOrders() {
     });
   };
 
-  // Filter orders
-  const filteredOrders = orders.filter(o => {
-    const matchesSearch =
-      o._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (o.user && (o.user.name || o.user.email).toLowerCase().includes(searchTerm.toLowerCase())) ||
-      o.totalPrice.toString().includes(searchTerm);
-
-    const matchesStatus = !filterStatus || o.status === filterStatus;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-
-  // Get unique statuses for filter
+  // Get unique statuses for filter (from current orders, but since paginated, may not be all)
   const statuses = [...new Set(orders.map(o => o.status))].sort();
 
   return (
@@ -151,7 +142,7 @@ export default function AdminOrders() {
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  setCurrentPage(1);
+                  loadOrders(1, e.target.value, filterStatus);
                 }}
               />
             </div>
@@ -161,7 +152,7 @@ export default function AdminOrders() {
                 value={filterStatus}
                 onChange={(e) => {
                   setFilterStatus(e.target.value);
-                  setCurrentPage(1);
+                  loadOrders(1, searchTerm, e.target.value);
                 }}
               >
                 <option value="">All Statuses</option>
@@ -171,7 +162,7 @@ export default function AdminOrders() {
               </select>
             </div>
           </div>
-          <small className="text-muted">Found {filteredOrders.length} order(s)</small>
+          <small className="text-muted">Found {totalOrders} order(s)</small>
         </div>
       </div>
 
@@ -220,7 +211,7 @@ export default function AdminOrders() {
 
       {loading ? (
         <p>Loading...</p>
-      ) : paginatedOrders.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="alert alert-info">No orders found.</div>
       ) : (
         <>
@@ -228,22 +219,58 @@ export default function AdminOrders() {
             <table className="table">
               <thead>
                 <tr>
-                  <th><input type="checkbox" checked={selectedOrders.length === paginatedOrders.length && paginatedOrders.length > 0} onChange={(e) => handleSelectAll(e.target.checked)} /></th>
+                  <th><input type="checkbox" checked={selectedOrders.length === orders.length && orders.length > 0} onChange={(e) => handleSelectAll(e.target.checked)} /></th>
                   <th>Date & Time</th>
                   <th>Order ID</th>
                   <th>User</th>
+                  <th>Payment</th>
+                  <th>Courier</th>
                   <th>Total</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedOrders.map(o => (
+                {orders.map(o => (
                   <tr key={o._id}>
                     <td><input type="checkbox" checked={selectedOrders.includes(o._id)} onChange={(e) => handleSelectOrder(o._id, e.target.checked)} /></td>
                     <td><small>{formatDate(o.createdAt)}</small></td>
                     <td><small>{o._id.slice(0, 8)}...</small></td>
-                    <td>{o.user ? (o.user.name || o.user.email) : 'Guest'}</td>
+                    <td>
+                      {o.user ? (
+                        <Link to={`/admin/customers/${o.user._id}`} className="text-decoration-none">
+                          {o.user.name || o.user.email}
+                        </Link>
+                      ) : 'Guest'}
+                    </td>
+                    <td>
+                      <span className="badge bg-light text-dark">
+                        {o.paymentMethod || 'N/A'}
+                      </span>
+                    </td>
+                    <td>
+                      {o.shipments && o.shipments.length > 0 ? (
+                        <div>
+                          {o.shipments.slice(0, 2).map((shipment, idx) => (
+                            <div key={idx} className="mb-1">
+                              <small className="text-capitalize fw-bold">{shipment.provider}</small>
+                              <br />
+                              <span className={`badge ${shipment.status === 'delivered' ? 'bg-success' :
+                                shipment.status === 'shipped' ? 'bg-primary' :
+                                  shipment.status === 'pending' ? 'bg-warning' :
+                                    'bg-secondary'} small`}>
+                                {shipment.status}
+                              </span>
+                            </div>
+                          ))}
+                          {o.shipments.length > 2 && (
+                            <small className="text-muted">+{o.shipments.length - 2} more</small>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="badge bg-secondary">No shipment</span>
+                      )}
+                    </td>
                     <td><strong>{formatPrice(o.totalPrice)}</strong></td>
                     <td>
                       <span className={`badge ${o.status === 'Completed' ? 'bg-success' :
@@ -272,19 +299,19 @@ export default function AdminOrders() {
             <nav aria-label="Page navigation" className="mt-3">
               <ul className="pagination justify-content-center">
                 <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>
+                  <button className="page-link" onClick={() => loadOrders(currentPage - 1, searchTerm, filterStatus)} disabled={currentPage === 1}>
                     Previous
                   </button>
                 </li>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-                    <button className="page-link" onClick={() => setCurrentPage(page)}>
+                    <button className="page-link" onClick={() => loadOrders(page, searchTerm, filterStatus)}>
                       {page}
                     </button>
                   </li>
                 ))}
                 <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                  <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
+                  <button className="page-link" onClick={() => loadOrders(currentPage + 1, searchTerm, filterStatus)} disabled={currentPage === totalPages}>
                     Next
                   </button>
                 </li>

@@ -114,8 +114,56 @@ exports.createOrder = async (req, res) => {
 
 exports.getOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate('user').populate('items.variationId');
-    res.json(orders);
+    // Pagination
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    // Filtering
+    const search = req.query.search || '';
+    const status = req.query.status || '';
+
+    let query = {};
+    if (status) {
+      query.status = status;
+    }
+    if (search) {
+      query.$or = [
+        { _id: { $regex: search, $options: 'i' } },
+        { 'user.name': { $regex: search, $options: 'i' } },
+        { 'user.email': { $regex: search, $options: 'i' } },
+        { totalPrice: isNaN(search) ? undefined : Number(search) },
+        { paymentMethod: { $regex: search, $options: 'i' } },
+        { shipmentName: { $regex: search, $options: 'i' } }
+      ].filter(Boolean);
+    }
+
+    const total = await Order.countDocuments(query);
+    const pages = Math.ceil(total / limit);
+
+    const orders = await Order.find(query)
+      .populate('user')
+      .populate('items.variationId')
+      .sort({ createdAt: -1 }) // newest first
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+
+    // Add shipments array based on order shipment fields
+    const ordersWithShipments = orders.map(order => {
+      const orderObj = order.toObject();
+      if (order.shipmentId && order.shipmentName) {
+        orderObj.shipments = [{
+          provider: order.shipmentName,
+          status: order.shipmentStatus || 'created',
+          providerShipmentId: order.shipmentId
+        }];
+      } else {
+        orderObj.shipments = [];
+      }
+      return orderObj;
+    });
+
+    res.json({ orders: ordersWithShipments, page, pages, total });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Server error' });
@@ -171,6 +219,189 @@ exports.updateOrderStatus = async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Add item to order
+exports.addItemToOrder = async (req, res) => {
+  try {
+    const { productId, variationId, qty, price } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Check stock availability
+    if (variationId) {
+      const variation = await ProductVariation.findById(variationId);
+      if (!variation) return res.status(400).json({ message: 'Variation not found' });
+      if (variation.stock < qty) return res.status(400).json({ message: 'Not enough stock for variation' });
+      variation.stock -= qty;
+      await variation.save();
+    } else {
+      const product = await Product.findById(productId);
+      if (!product) return res.status(400).json({ message: 'Product not found' });
+      if (product.stock < qty) return res.status(400).json({ message: 'Not enough stock for product' });
+      product.stock -= qty;
+      await product.save();
+    }
+
+    // Get product details
+    let name, productData;
+    if (variationId) {
+      const variation = await ProductVariation.findById(variationId).populate('product');
+      name = `${variation.product.name} (${variation.size})`;
+      productData = {
+        _id: variation.product._id,
+        name: variation.product.name,
+        price: variation.product.price,
+        discountedPrice: variation.product.discountedPrice
+      };
+    } else {
+      const product = await Product.findById(productId);
+      name = product.name;
+      productData = {
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        discountedPrice: product.discountedPrice
+      };
+    }
+
+    // Add item to order
+    order.items.push({
+      product: productData,
+      variationId,
+      name,
+      qty,
+      price
+    });
+
+    // Recalculate total price
+    order.totalPrice = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Server error: ' + err.message });
+  }
+};
+
+// Remove item from order
+exports.removeItemFromOrder = async (req, res) => {
+  try {
+    const { itemIndex } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (itemIndex < 0 || itemIndex >= order.items.length) return res.status(400).json({ message: 'Invalid item index' });
+
+    const item = order.items[itemIndex];
+
+    // Return stock
+    if (item.variationId) {
+      const variation = await ProductVariation.findById(item.variationId);
+      if (variation) {
+        variation.stock += item.qty;
+        await variation.save();
+      }
+    } else {
+      const product = await Product.findById(item.product._id || item.product);
+      if (product) {
+        product.stock += item.qty;
+        await product.save();
+      }
+    }
+
+    // Remove item
+    order.items.splice(itemIndex, 1);
+
+    // Recalculate total price
+    order.totalPrice = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Server error: ' + err.message });
+  }
+};
+
+// Update item quantity in order
+exports.updateItemQuantity = async (req, res) => {
+  try {
+    const { itemIndex, newQty } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (itemIndex < 0 || itemIndex >= order.items.length) return res.status(400).json({ message: 'Invalid item index' });
+    if (newQty <= 0) return res.status(400).json({ message: 'Quantity must be positive' });
+
+    const item = order.items[itemIndex];
+    const qtyDiff = newQty - item.qty;
+
+    // Adjust stock
+    if (qtyDiff > 0) {
+      // Increasing quantity - check and reduce stock
+      if (item.variationId) {
+        const variation = await ProductVariation.findById(item.variationId);
+        if (!variation) return res.status(400).json({ message: 'Variation not found' });
+        if (variation.stock < qtyDiff) return res.status(400).json({ message: 'Not enough stock for variation' });
+        variation.stock -= qtyDiff;
+        await variation.save();
+      } else {
+        const product = await Product.findById(item.product._id || item.product);
+        if (!product) return res.status(400).json({ message: 'Product not found' });
+        if (product.stock < qtyDiff) return res.status(400).json({ message: 'Not enough stock for product' });
+        product.stock -= qtyDiff;
+        await product.save();
+      }
+    } else if (qtyDiff < 0) {
+      // Decreasing quantity - return stock
+      if (item.variationId) {
+        const variation = await ProductVariation.findById(item.variationId);
+        if (variation) {
+          variation.stock += Math.abs(qtyDiff);
+          await variation.save();
+        }
+      } else {
+        const product = await Product.findById(item.product._id || item.product);
+        if (product) {
+          product.stock += Math.abs(qtyDiff);
+          await product.save();
+        }
+      }
+    }
+
+    // Update quantity
+    item.qty = newQty;
+
+    // Recalculate total price
+    order.totalPrice = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Server error: ' + err.message });
+  }
+};
+
+// Update order shipping address
+exports.updateOrderAddress = async (req, res) => {
+  try {
+    const { shippingInfo } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Validate required fields
+    if (!shippingInfo || !shippingInfo.name || !shippingInfo.phone || !shippingInfo.address) {
+      return res.status(400).json({ message: 'Missing required shipping information' });
+    }
+
+    order.shippingInfo = shippingInfo;
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Server error: ' + err.message });
   }
 };
 
